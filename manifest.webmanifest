@@ -1,0 +1,9 @@
+{
+  "name": "Çukurambar Spor Kulübü V2",
+  "short_name": "ÇSK V2",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0D1113",
+  "theme_color": "#0D1113",
+  "lang": "tr"
+}
