@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>kAnka — ÇSK</title>
+<style>
+:root{--bg:#0D1113;--fg:#f3f5f4;--g:#1a7a4c;--gold:#d4a24a;--mut:#8b9591}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:Manrope,system-ui,sans-serif}
+.phone{max-width:28rem;margin:0 auto;min-height:100dvh;padding:28px 22px 40px;text-align:center}
+h1,h2,.nm{font-family:Oswald,sans-serif;letter-spacing:.06em}
+.mut{color:var(--mut);font-size:13px}
+.hero{width:220px;height:264px;margin:12px auto;filter:drop-shadow(0 16px 32px rgba(26,122,76,.4))}
+input,button{font:inherit;width:100%}
+input{height:44px;border-radius:8px;border:1px solid #232b2f;background:#1a2226;color:inherit;padding:0 12px;margin:8px 0}
+button{height:46px;border:0;border-radius:10px;background:var(--g);color:#fff;font-weight:600;margin-top:8px}
+button.g{background:transparent;border:1px solid #232b2f}
+.card{text-align:left;background:#1a2226;border:1px solid #232b2f;border-radius:16px;padding:16px;margin-top:14px}
+.nm{font-size:28px;margin:6px 0}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600&family=Oswald:wght@600&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<div class="phone" id="app"></div>
+<script>
+const SVG=`<svg class="hero" viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#1a7a4c" opacity=".28" d="M20 150c30-40 50-52 80-58 30 6 50 18 80 58-30-10-52-14-80-14s-50 4-80 14z"/>
+  <path fill="#1a7a4c" d="M100 18c16 18 30 26 48 30-8 34-22 56-48 92C74 104 60 82 52 48 70 44 84 36 100 18z"/>
+  <path fill="#14633e" d="M38 78c24-6 42 2 62 22-28 10-46 12-68 8 2-10 4-20 6-30z"/>
+  <path fill="#14633e" d="M162 78c-24-6-42 2-62 22 28 10 46 12 68 8-2-10-4-20-6-30z"/>
+  <path fill="#d4a24a" d="M88 148c6 22 10 36 12 62 2-26 6-40 12-62-8 4-16 4-24 0z"/>
+  <circle cx="100" cy="52" r="7" fill="#0D1113"/>
+  <circle cx="103" cy="50" r="2.2" fill="#f3f5f4"/>
+</svg>`;
+const app=document.getElementById("app");
+function login(){
+  app.innerHTML=`${SVG}<p class="nm">kAnka</p>
+  <p class="mut">Çukurambar Spor Kulübü</p>
+  <h1>SPOR KULÜBÜ</h1>
+  <input id="em" type="email" placeholder="nil@cukurambar.com" value="nil@cukurambar.com"/>
+  <button id="go">Giriş Yap</button>
+  <button class="g" id="play">ÇSK PLAY’i keşfet</button>`;
+  document.getElementById("go").onclick=home;
+  document.getElementById("play").onclick=home;
+}
+function home(){
+  app.innerHTML=`${SVG}<p class="nm">kAnka</p>
+  <p class="mut">İyi akşamlar, Nil</p>
+  <div class="card">
+    <p class="mut">Sıradaki antrenman</p>
+    <h2>19:00 – 20:30</h2>
+    <p class="mut">MoveOn Oran · 90 dk</p>
+  </div>
+  <div class="card">
+    <p class="nm" style="font-size:20px">kAnka</p>
+    <p>Bu hafta 2/3 antrenmanı tamamladın.</p>
+    <p>Bir antrenman daha ve Haftanın Serisi rozetini kazanacaksın.</p>
+  </div>`;
+}
+login();
+</script>
+</body>
+</html>
