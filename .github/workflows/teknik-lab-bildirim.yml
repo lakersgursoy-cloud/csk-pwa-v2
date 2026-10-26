@@ -1,0 +1,48 @@
+name: Teknik Lab bildirim
+
+# Her 10 dakikada bir: antrenmanına ~1 saat kalan öğrencilerin velilerine
+# Çukurambar SK uygulamasından (Wix) push bildirimi gönderir.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      kod:
+        description: 'Test: bu öğrenci koduna hemen gönder'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: teknik-lab-bildirim
+  cancel-in-progress: false
+
+jobs:
+  gonder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bildirimleri gönder
+        run: node teknik-lab/bildirim/gonder.mjs
+        env:
+          KADRO_SIFRE: ${{ secrets.KADRO_SIFRE }}
+          WIX_WEBHOOK_URL: ${{ secrets.WIX_WEBHOOK_URL }}
+          TEST_KOD: ${{ inputs.kod }}
+
+      - name: Gönderilenleri kaydet
+        if: always()
+        run: |
+          if git diff --quiet -- teknik-lab/veri/gonderilen.json; then exit 0; fi
+          git config user.name "csk-bildirim"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add teknik-lab/veri/gonderilen.json
+          git commit -m "Teknik Lab: bildirim gönderildi"
+          for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done

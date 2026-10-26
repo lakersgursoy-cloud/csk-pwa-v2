@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#06140f">
+<title>ÇSK Koç Paneli</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --bg:#06140f;--bg2:#0a1c15;--panel:#0d241b;--panel2:#123024;--line:#1e4536;--line2:#2c5e4a;
+  --fg:#eef7f2;--muted:#9cc0af;--dim:#719a87;--brand:#0f6b47;--brand-hi:#22a872;--ink:#04100b;
+  --g:#34c77b;--y:#f3c23c;--r:#f0605a;
+  --display:"Saira Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:15px/1.45 var(--body);-webkit-font-smoothing:antialiased;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px)) 0 max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#0a2219 70%,rgba(10,34,25,.92));border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 10px}
+.hd h1{margin:0;font:700 22px/1 var(--display);letter-spacing:.04em;text-transform:uppercase}
+.hd h1 b{color:var(--brand-hi)}
+.durum{font:12px var(--mono);color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.durum.ok{color:var(--g);border-color:var(--g)}.durum.hata{color:var(--r);border-color:var(--r)}.durum.is{color:var(--y);border-color:var(--y)}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-bottom:10px}
+nav button{border:1px solid var(--line2);background:var(--panel);border-radius:10px;min-height:42px;font:600 16px var(--display);letter-spacing:.06em;text-transform:uppercase}
+nav button[aria-current="page"]{background:#fff;color:var(--ink);border-color:#fff}
+main{padding-top:14px;display:grid;gap:12px}
+.kart{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px}
+.kart h2{margin:0;font:700 18px/1.1 var(--display);letter-spacing:.05em;text-transform:uppercase;display:flex;gap:8px;align-items:center}
+.kart h2 i{font:600 12px var(--mono);font-style:normal;background:var(--brand);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+.ince{margin:0;color:var(--muted);font-size:13px}
+.ikili{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label.al{display:grid;gap:4px;font-size:12px;color:var(--dim);letter-spacing:.04em}
+input.g,select.g,textarea.g{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:10px;min-height:44px;font-size:16px}
+textarea.g{min-height:64px;resize:vertical}
+.cipler{display:flex;flex-wrap:wrap;gap:6px}
+.cip{border:1px solid var(--line2);background:var(--bg2);border-radius:999px;padding:7px 13px;min-height:38px;font-size:14px}
+.cip[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:#fff;font-weight:600}
+.stiller{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stiller .cip{border-radius:10px;font:700 15px var(--display);letter-spacing:.05em;text-transform:uppercase;padding:8px 4px}
+.secim{font:600 14px var(--body);padding:8px 10px;border-radius:8px;background:var(--bg2);border:1px dashed var(--line2)}
+.liste{display:grid;gap:6px}
+.ogr{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px;background:var(--bg2);border:1px solid var(--line);border-radius:10px}
+.ogr.sec{border-color:var(--brand-hi);background:#0f2a1f}
+.ogr input[type=checkbox]{width:22px;height:22px;accent-color:var(--brand-hi);margin:0}
+.ogr .ad{font-weight:600}
+.ogr .alt{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.etk{font:11px var(--mono);border-radius:999px;padding:1px 7px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+.etk.gitti{color:var(--g);border-color:var(--g)}.etk.bekl{color:var(--y);border-color:var(--y)}.etk.yok{color:var(--r);border-color:var(--r)}
+.mini{border:1px solid var(--line2);background:var(--panel2);border-radius:8px;padding:6px 10px;font-size:13px;min-height:34px}
+.mini.tehlike{border-color:#8a2a24;color:#ffb4ae}
+.btn{border:1px solid var(--brand-hi);background:var(--brand);color:#fff;border-radius:10px;min-height:46px;padding:0 16px;font-weight:600}
+.btn.ikincil{background:var(--panel2);border-color:var(--line2);color:var(--fg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.alt-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:linear-gradient(0deg,#06140f 70%,rgba(6,20,15,0));padding:18px 0 calc(12px + env(safe-area-inset-bottom,0px))}
+.alt-bar .wrap{display:flex;gap:8px}
+.alt-bar .btn{flex:1}
+.ust{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.kod{font:600 14px var(--mono);letter-spacing:.12em;color:var(--fg)}
+.uyari{margin:0;padding:10px 12px;border-radius:8px;border:1px solid #6b5313;background:#2a2207;color:#ffe08a;font-size:13.5px}
+.adimlar{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--muted);font-size:14px}
+.adimlar b{color:var(--fg)}
+a{color:#9be6c2}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;background:#fff;color:var(--ink);border-radius:999px;padding:8px 16px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:calc(100vw - 32px);text-align:center}
+[hidden]{display:none!important}
+@media (max-width:420px){.stiller{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="hd"><h1>ÇSK <b>Koç</b> Paneli</h1><span class="durum" id="durum">Yükleniyor</span></div>
+  <nav aria-label="Bölümler">
+    <button type="button" data-sekme="antrenman" aria-current="page">Antrenman</button>
+    <button type="button" data-sekme="ogrenciler">Öğrenciler</button>
+    <button type="button" data-sekme="ayarlar">Ayarlar</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <!-- ANTRENMAN -->
+  <section id="s-antrenman" class="sekme">
+    <div class="kart">
+      <h2><i>1</i>Antrenman zamanı</h2>
+      <div class="ikili">
+        <label class="al">Tarih<input class="g" type="date" id="tarih"></label>
+        <label class="al">Saat<input class="g" type="time" id="saat" step="300"></label>
+      </div>
+      <p class="ince" id="bildirimZamani"></p>
+    </div>
+    <div class="kart" style="margin-top:12px">
+      <h2><i>2</i>Ne izlesin?</h2>
+      <div class="stiller" id="stiller"></div>
+      <div class="cipler" id="sahneler"></div>
+      <div class="cipler" id="konular"></div>
+      <div class="secim" id="secimOzet"></div>
+      <label class="al">Not (isteğe bağlı, veliye ve öğrenciye görünür)<textarea class="g" id="not" maxlength="200" placeholder="Örn. Bacak vuruşunu dizden değil kalçadan başlat."></textarea></label>
+    </div>
+    <div class="kart" style="margin-top:12px">
+      <div class="ust"><h2><i>3</i>Kimler?</h2><button class="mini" type="button" id="tumu">Tümünü seç</button></div>
+      <div class="liste" id="ogrListe"></div>
+      <p class="ince" id="ogrBos" hidden>Henüz öğrenci yok. <a href="#" data-git="ogrenciler">Öğrenciler</a> bölümünden ekle.</p>
+    </div>
+  </section>
+
+  <!-- ÖĞRENCİLER -->
+  <section id="s-ogrenciler" class="sekme" hidden>
+    <form class="kart" id="ogrForm">
+      <h2 id="ogrFormBaslik">Öğrenci ekle</h2>
+      <label class="al">Öğrencinin adı<input class="g" name="ad" required maxlength="60" autocomplete="off"></label>
+      <label class="al">Velinin Çukurambar SK uygulamasındaki e-postası<input class="g" name="eposta" type="email" required autocomplete="off" inputmode="email"></label>
+      <label class="al">Veli telefonu (isteğe bağlı, linki WhatsApp'tan göndermek için)<input class="g" name="tel" type="tel" autocomplete="off" placeholder="05xx xxx xx xx"></label>
+      <div style="display:flex;gap:8px"><button class="btn" style="flex:1">Kaydet</button><button class="btn ikincil" type="button" id="ogrVazgec" hidden>Vazgeç</button></div>
+    </form>
+    <div class="kart" style="margin-top:12px">
+      <h2>Kadro <span class="ince" id="kadroSay"></span></h2>
+      <p class="ince">Her öğrencinin kendine ait bir kodu var. Linki veliye bir kez gönder; Wix uygulamasının içinde de "Ödev kodum" düğmesine bu kod yazılır.</p>
+      <div class="liste" id="kadroListe"></div>
+    </div>
+  </section>
+
+  <!-- AYARLAR -->
+  <section id="s-ayarlar" class="sekme" hidden>
+    <div class="kart" id="kurulumKart">
+      <h2>İlk kurulum</h2>
+      <ol class="adimlar">
+        <li><b>GitHub anahtarı:</b> github.com → Settings → Developer settings → Fine-grained tokens → Generate. Repository: <b>csk-pwa-v2</b>. İzinler: <b>Contents: Read and write</b>, <b>Actions: Read and write</b>.</li>
+        <li><b>Kadro şifresi:</b> öğrenci isimlerini ve veli e-postalarını kilitleyen şifre. Kendin belirle; aynısını GitHub'da <b>KADRO_SIFRE</b> adlı secret olarak da gir.</li>
+        <li><b>Wix webhook adresi:</b> Wix Automations'ta "Webhook received" tetikleyicisinin verdiği adres.</li>
+      </ol>
+    </div>
+    <form class="kart" id="ayarForm" style="margin-top:12px">
+      <h2>Bağlantı</h2>
+      <label class="al">GitHub anahtarı (yalnızca bu telefonda saklanır)<input class="g" name="token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+      <label class="al">Kadro şifresi (yalnızca bu telefonda saklanır)<input class="g" name="sifre" type="password" autocomplete="off"></label>
+      <button class="btn">Bağlan</button>
+      <p class="ince" id="ayarMesaj"></p>
+    </form>
+    <form class="kart" id="webhookForm" style="margin-top:12px">
+      <h2>Wix bildirimi</h2>
+      <label class="al">Wix webhook adresi (kadroyla birlikte şifreli saklanır)<input class="g" name="webhook" type="url" autocomplete="off" placeholder="https://manage.wix.com/…"></label>
+      <button class="btn">Kaydet</button>
+    </form>
+    <div class="kart" style="margin-top:12px">
+      <h2>Test bildirimi</h2>
+      <p class="ince">Seçtiğin öğrencinin velisine, saati beklemeden hemen bir bildirim gönderir. Öğrencinin işaretli bir ödevi olmalı.</p>
+      <select class="g" id="testOgr"></select>
+      <button class="btn ikincil" type="button" id="testBtn">Test bildirimini gönder</button>
+      <p class="ince" id="testMesaj"></p>
+    </div>
+    <div class="kart" style="margin-top:12px">
+      <h2>Bu telefon</h2>
+      <p class="ince">Anahtarı ve şifreyi bu cihazdan siler. Kadro ve ödevler GitHub'da kalır.</p>
+      <button class="btn ikincil" type="button" id="cikis">Bu telefondan çıkış yap</button>
+    </div>
+  </section>
+</main>
+
+<div class="alt-bar" id="altBar"><div class="wrap">
+  <button class="btn" type="button" id="isaretle" disabled>Öğrenci seç</button>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+import { sifrele, coz, metinB64, b64Metin } from './ortak/sifre.js';
+import { KATALOG, stilBul, sahneBul, etiket } from './ortak/katalog.js';
+
+const SAHIP = 'lakersgursoy-cloud', REPO = 'csk-pwa-v2', DAL = 'main';
+const YOL = { odev: 'teknik-lab/veri/odev.json', kadro: 'teknik-lab/veri/kadro.enc.json', gonderilen: 'teknik-lab/veri/gonderilen.json' };
+const LAB = 'https://lakersgursoy-cloud.github.io/csk-pwa-v2/teknik-lab/';
+const IS_DOSYASI = 'teknik-lab-bildirim.yml';
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const yerel = {
+  al(k) { try { return localStorage.getItem('cskKoc.' + k) || ''; } catch { return ''; } },
+  koy(k, v) { try { v ? localStorage.setItem('cskKoc.' + k, v) : localStorage.removeItem('cskKoc.' + k); } catch {} },
+};
+
+const D = {
+  token: yerel.al('token'), sifre: yerel.al('sifre'),
+  kadro: { ogrenciler: [], webhook: '' }, odev: { guncelleme: null, odevler: {} }, gonderilen: {},
+  secili: new Set(), sec: { stil: 'free', sahne: 'start', konu: null }, duzenlenen: null,
+};
+
+/* ---------- arayüz yardımcıları ---------- */
+function durum(metin, tur) { const el = $('#durum'); el.textContent = metin; el.className = 'durum ' + (tur || ''); }
+let toastZ; function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastZ); toastZ = setTimeout(() => (t.hidden = true), 2600); }
+function sekme(ad) {
+  document.querySelectorAll('.sekme').forEach((s) => (s.hidden = s.id !== 's-' + ad));
+  document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-current', b.dataset.sekme === ad ? 'page' : 'false'));
+  $('#altBar').hidden = ad !== 'antrenman';
+  window.scrollTo(0, 0);
+}
+
+/* ---------- GitHub ---------- */
+async function gh(yol, ayar = {}) {
+  const r = await fetch('https://api.github.com/repos/' + SAHIP + '/' + REPO + yol, {
+    ...ayar, headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + D.token, 'X-GitHub-Api-Version': '2022-11-28', ...(ayar.headers || {}) },
+  });
+  return r;
+}
+async function dosyaOku(yol) {
+  const r = await gh('/contents/' + yol + '?ref=' + DAL + '&t=' + Date.now(), { cache: 'no-store' });
+  if (r.status === 404) return { veri: null, sha: null };
+  if (r.status === 401) throw new Error('GitHub anahtarı geçersiz ya da süresi dolmuş.');
+  if (r.status === 403) throw new Error('GitHub anahtarının bu repoya izni yok.');
+  if (!r.ok) throw new Error('GitHub okunamadı (' + r.status + ').');
+  const j = await r.json();
+  return { veri: JSON.parse(b64Metin(j.content)), sha: j.sha };
+}
+async function dosyaYaz(yol, veri, sha, mesaj) {
+  const r = await gh('/contents/' + yol, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: mesaj, branch: DAL, content: metinB64(JSON.stringify(veri, null, 2) + '\n'), ...(sha ? { sha } : {}) }),
+  });
+  if (r.status === 409 || r.status === 422) return { cakisma: true };
+  if (!r.ok) throw new Error('Kaydedilemedi (' + r.status + ').');
+  return { sha: (await r.json()).content.sha };
+}
+/** En güncel dosyayı okur, değişikliği uygular, yazar. Aynı anda başka kayıt olursa bir kez daha dener. */
+async function guncelle(yol, uygula, mesaj, { sifreli = false } = {}) {
+  for (let deneme = 0; deneme < 3; deneme++) {
+    const { veri, sha } = await dosyaOku(yol);
+    let duz = veri;
+    if (sifreli && veri) duz = await coz(veri, D.sifre);
+    const yeni = uygula(duz);
+    const yazilacak = sifreli ? await sifrele(yeni, D.sifre) : yeni;
+    const s = await dosyaYaz(yol, yazilacak, sha, mesaj);
+    if (!s.cakisma) return yeni;
+  }
+  throw new Error('Aynı anda başka bir kayıt yapıldı, tekrar dene.');
+}
+
+async function yukle() {
+  if (!D.token || !D.sifre) { durum('Kurulum gerekli', 'hata'); sekme('ayarlar'); cizAyar(); return false; }
+  durum('Yükleniyor', 'is');
+  try {
+    const [o, k, g] = await Promise.all([dosyaOku(YOL.odev), dosyaOku(YOL.kadro), dosyaOku(YOL.gonderilen)]);
+    D.odev = o.veri || { guncelleme: null, odevler: {} };
+    D.gonderilen = g.veri || {};
+    if (k.veri) {
+      try { D.kadro = await coz(k.veri, D.sifre); }
+      catch { durum('Şifre yanlış', 'hata'); sekme('ayarlar'); cizAyar('Kadro şifresi yanlış. Kadroyu ilk oluştururken kullandığın şifreyi gir.'); return false; }
+    } else D.kadro = { ogrenciler: [], webhook: '' };
+    D.kadro.ogrenciler ||= [];
+    durum('Güncel', 'ok'); ciz(); return true;
+  } catch (e) { durum('Hata', 'hata'); sekme('ayarlar'); cizAyar(e.message); return false; }
+}
+
+/* ---------- zaman ---------- */
+function antrenmanISO() { const t = $('#tarih').value, s = $('#saat').value; return t && s ? `${t}T${s}:00+03:00` : null; }
+const saatYaz = (ms) => new Date(ms).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' });
+function gunYaz(iso) {
+  const d = new Date(iso), f = (x) => x.toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' });
+  const b = new Date(), y = new Date(Date.now() + 864e5);
+  const g = f(d) === f(b) ? 'Bugün' : f(d) === f(y) ? 'Yarın' : d.toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Istanbul' });
+  return g + ' ' + saatYaz(d);
+}
+function varsayilanZaman() {
+  const kayitli = yerel.al('sonSaat');
+  const d = new Date(Date.now() + 3 * 3600e3); // İstanbul saatine göre bugünün tarihi
+  $('#tarih').value = d.toISOString().slice(0, 10);
+  $('#saat').value = kayitli || '18:00';
+}
+function bildirimSatiri() {
+  const iso = antrenmanISO(); if (!iso) return ($('#bildirimZamani').textContent = '');
+  const t = Date.parse(iso), b = t - 3600e3;
+  $('#bildirimZamani').textContent = t < Date.now() ? 'Bu saat geçmiş. İleri bir saat seç.' :
+    b < Date.now() ? 'Bildirim, kaydeder kaydetmez (birkaç dakika içinde) gider.' :
+    'Velilere bildirim yaklaşık ' + saatYaz(b) + ' civarında gider.';
+}
+
+/* ---------- çizim ---------- */
+function cizSecim() {
+  $('#stiller').innerHTML = KATALOG.map((s) => `<button class="cip" type="button" data-stil="${s.id}" aria-pressed="${s.id === D.sec.stil}">${esc(s.ad.replace('Kurbağalama', 'Kurbağa'))}</button>`).join('');
+  const st = stilBul(D.sec.stil);
+  $('#sahneler').innerHTML = st.sahneler.map((sc) => `<button class="cip" type="button" data-sahne="${sc.id}" aria-pressed="${sc.id === D.sec.sahne}">${sc.n} · ${esc(sc.kisa)}</button>`).join('');
+  const sc = sahneBul(D.sec.stil, D.sec.sahne);
+  $('#konular').innerHTML = sc && sc.konular.length ? sc.konular.map((k) => `<button class="cip" type="button" data-konu="${k[0]}" aria-pressed="${k[0] === D.sec.konu}">${esc(k[1])}</button>`).join('') : '';
+  $('#secimOzet').textContent = '▶ ' + etiket(D.sec);
+}
+function durumEtiketi(kod, o) {
+  if (!o) return '';
+  const t = Date.parse(o.antrenman);
+  const ogr = D.kadro.ogrenciler.find((x) => x.kod === kod);
+  if (D.gonderilen[kod + '|' + o.antrenman]) return '<span class="etk gitti">Bildirim gitti ✓</span>';
+  if (t < Date.now()) return '<span class="etk">Antrenman geçti</span>';
+  if (!ogr || !ogr.eposta) return '<span class="etk yok">Veli e-postası yok</span>';
+  return `<span class="etk bekl">Bildirim ~${esc(saatYaz(Math.max(t - 3600e3, Date.now())))}</span>`;
+}
+function cizOgrenciler() {
+  const l = D.kadro.ogrenciler;
+  $('#ogrBos').hidden = !!l.length; $('#tumu').hidden = !l.length;
+  $('#ogrListe').innerHTML = l.map((x) => {
+    const o = D.odev.odevler[x.kod];
+    const odevMetni = o ? `<span>${esc(gunYaz(o.antrenman))}: ${o.ogeler.map((g) => esc(etiket(g))).join(', ')}</span>` : '<span>Ödev yok</span>';
+    return `<label class="ogr${D.secili.has(x.kod) ? ' sec' : ''}">
+      <input type="checkbox" data-kod="${x.kod}" ${D.secili.has(x.kod) ? 'checked' : ''}>
+      <div><div class="ad">${esc(x.ad)}</div><div class="alt">${odevMetni}${durumEtiketi(x.kod, o)}</div></div>
+      ${o ? `<button class="mini tehlike" type="button" data-temizle="${x.kod}" aria-label="${esc(x.ad)} ödevini sil">Sil</button>` : '<span></span>'}
+    </label>`;
+  }).join('');
+  const n = D.secili.size;
+  $('#isaretle').disabled = !n;
+  $('#isaretle').textContent = n ? `${n} öğrenciye işaretle` : 'Öğrenci seç';
+  $('#tumu').textContent = n === l.length && n ? 'Seçimi kaldır' : 'Tümünü seç';
+}
+function cizKadro() {
+  const l = D.kadro.ogrenciler;
+  $('#kadroSay').textContent = l.length ? '· ' + l.length + ' öğrenci' : '';
+  $('#kadroListe').innerHTML = l.length ? l.map((x) => `<div class="ogr" style="grid-template-columns:1fr auto">
+      <div><div class="ad">${esc(x.ad)} <span class="kod">${x.kod}</span></div><div class="alt"><span>${esc(x.eposta || 'e-posta yok')}</span>${x.tel ? `<span>${esc(x.tel)}</span>` : ''}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="mini" type="button" data-paylas="${x.kod}">Linki gönder</button>
+        <button class="mini" type="button" data-duzenle="${x.kod}">Düzenle</button>
+        <button class="mini tehlike" type="button" data-sil="${x.kod}">Çıkar</button>
+      </div></div>`).join('') : '<p class="ince">Henüz öğrenci eklenmedi.</p>';
+  $('#testOgr').innerHTML = l.map((x) => `<option value="${x.kod}">${esc(x.ad)}${D.odev.odevler[x.kod] ? '' : ' (ödev yok)'}</option>`).join('');
+}
+function cizAyar(mesaj) {
+  const f = $('#ayarForm');
+  f.token.value = D.token; f.sifre.value = D.sifre;
+  $('#webhookForm').webhook.value = D.kadro.webhook || '';
+  $('#ayarMesaj').textContent = mesaj || (D.token && D.sifre ? 'Bağlı.' : '');
+  $('#ayarMesaj').style.color = mesaj ? 'var(--r)' : '';
+  $('#kurulumKart').hidden = !!(D.token && D.sifre && !mesaj && D.kadro.webhook);
+}
+function ciz() { cizSecim(); cizOgrenciler(); cizKadro(); cizAyar(); bildirimSatiri(); }
+
+/* ---------- işlemler ---------- */
+async function kaydetOdev(uygula, mesaj) {
+  durum('Kaydediliyor', 'is');
+  try {
+    D.odev = await guncelle(YOL.odev, (v) => { v ||= { odevler: {} }; v.odevler ||= {}; uygula(v); v.guncelleme = new Date().toISOString(); return v; }, mesaj);
+    durum('Kaydedildi', 'ok'); ciz(); return true;
+  } catch (e) { durum('Hata', 'hata'); toast(e.message); return false; }
+}
+async function kaydetKadro(uygula, mesaj) {
+  durum('Kaydediliyor', 'is');
+  try {
+    D.kadro = await guncelle(YOL.kadro, (v) => { v ||= { ogrenciler: [], webhook: '' }; v.ogrenciler ||= []; uygula(v); return v; }, mesaj, { sifreli: true });
+    durum('Kaydedildi', 'ok'); ciz(); return true;
+  } catch (e) { durum('Hata', 'hata'); toast(e.message.includes('decrypt') || e.name === 'OperationError' ? 'Kadro şifresi uyuşmuyor.' : e.message); return false; }
+}
+function yeniKod() {
+  const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; const mevcut = new Set(D.kadro.ogrenciler.map((x) => x.kod));
+  for (;;) { const r = crypto.getRandomValues(new Uint8Array(6)); const k = Array.from(r, (b) => A[b % A.length]).join(''); if (!mevcut.has(k)) return k; }
+}
+function telWa(t) { let d = String(t || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '90' + d.slice(1); else if (d.length === 10) d = '90' + d; return d; }
+
+$('nav').onclick = (e) => { const b = e.target.closest('[data-sekme]'); if (b) sekme(b.dataset.sekme); };
+document.addEventListener('click', (e) => { const a = e.target.closest('[data-git]'); if (a) { e.preventDefault(); sekme(a.dataset.git); } });
+
+$('#stiller').onclick = (e) => { const b = e.target.closest('[data-stil]'); if (!b) return; D.sec.stil = b.dataset.stil; if (!sahneBul(D.sec.stil, D.sec.sahne)) D.sec.sahne = 'start'; D.sec.konu = null; cizSecim(); };
+$('#sahneler').onclick = (e) => { const b = e.target.closest('[data-sahne]'); if (!b) return; D.sec.sahne = b.dataset.sahne; D.sec.konu = null; cizSecim(); };
+$('#konular').onclick = (e) => { const b = e.target.closest('[data-konu]'); if (!b) return; D.sec.konu = D.sec.konu === b.dataset.konu ? null : b.dataset.konu; cizSecim(); };
+$('#tarih').onchange = $('#saat').onchange = () => { yerel.koy('sonSaat', $('#saat').value); bildirimSatiri(); };
+
+$('#ogrListe').onchange = (e) => { const c = e.target.closest('[data-kod]'); if (!c) return; c.checked ? D.secili.add(c.dataset.kod) : D.secili.delete(c.dataset.kod); cizOgrenciler(); };
+$('#ogrListe').onclick = async (e) => {
+  const b = e.target.closest('[data-temizle]'); if (!b) return;
+  e.preventDefault(); const kod = b.dataset.temizle;
+  await kaydetOdev((v) => { delete v.odevler[kod]; }, 'Teknik Lab: ödev silindi');
+};
+$('#tumu').onclick = () => { const l = D.kadro.ogrenciler; if (D.secili.size === l.length) D.secili.clear(); else l.forEach((x) => D.secili.add(x.kod)); cizOgrenciler(); };
+
+$('#isaretle').onclick = async () => {
+  const iso = antrenmanISO();
+  if (!iso) return toast('Antrenman tarih ve saatini seç.');
+  if (Date.parse(iso) < Date.now()) return toast('Antrenman saati geçmiş görünüyor.');
+  const oge = { stil: D.sec.stil, sahne: D.sec.sahne, ...(D.sec.konu ? { konu: D.sec.konu } : {}) };
+  const not = $('#not').value.trim(); const kodlar = [...D.secili];
+  const ok = await kaydetOdev((v) => {
+    for (const kod of kodlar) {
+      const eski = v.odevler[kod];
+      const ayni = eski && eski.antrenman === iso;
+      const ogeler = ayni ? eski.ogeler.filter((g) => !(g.stil === oge.stil && g.sahne === oge.sahne && (g.konu || null) === (oge.konu || null))) : [];
+      ogeler.push(oge);
+      v.odevler[kod] = { antrenman: iso, ogeler: ogeler.slice(-4), ...(not ? { not } : ayni && eski.not ? { not: eski.not } : {}) };
+    }
+  }, `Teknik Lab: ${kodlar.length} öğrenciye ${etiket(oge)}`);
+  if (ok) { toast(`${kodlar.length} öğrenciye işaretlendi: ${etiket(oge)}`); D.secili.clear(); cizOgrenciler(); }
+};
+
+$('#ogrForm').onsubmit = async (e) => {
+  e.preventDefault(); const f = e.target;
+  const kayit = { ad: f.ad.value.trim(), eposta: f.eposta.value.trim().toLowerCase(), tel: f.tel.value.trim() };
+  if (!kayit.ad) return;
+  const kod = D.duzenlenen || yeniKod();
+  const ok = await kaydetKadro((v) => {
+    const i = v.ogrenciler.findIndex((x) => x.kod === kod);
+    if (i >= 0) v.ogrenciler[i] = { ...v.ogrenciler[i], ...kayit }; else v.ogrenciler.push({ kod, ...kayit });
+    v.ogrenciler.sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+  }, 'Teknik Lab: kadro güncellendi');
+  if (ok) { toast(D.duzenlenen ? 'Güncellendi' : kayit.ad + ' eklendi · kod ' + kod); formSifirla(); }
+};
+function formSifirla() { D.duzenlenen = null; $('#ogrForm').reset(); $('#ogrFormBaslik').textContent = 'Öğrenci ekle'; $('#ogrVazgec').hidden = true; }
+$('#ogrVazgec').onclick = formSifirla;
+$('#kadroListe').onclick = async (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const kod = b.dataset.paylas || b.dataset.duzenle || b.dataset.sil;
+  const x = D.kadro.ogrenciler.find((o) => o.kod === kod); if (!x) return;
+  if (b.dataset.paylas) {
+    const link = LAB + '?k=' + kod;
+    const metin = `Merhaba, ${x.ad} için Çukurambar SK Teknik Lab linki: ${link}\nUygulamada "Teknik Lab" ekranında "Ödev kodum" kısmına ${kod} kodunu bir kez girmeniz yeterli. Her antrenmandan 1 saat önce izlemesi gereken bölümü bildirimle göndereceğim.`;
+    if (x.tel) window.open('https://wa.me/' + telWa(x.tel) + '?text=' + encodeURIComponent(metin), '_blank');
+    else if (navigator.share) navigator.share({ text: metin }).catch(() => {});
+    else { await navigator.clipboard.writeText(metin).catch(() => {}); toast('Mesaj kopyalandı'); }
+  } else if (b.dataset.duzenle) {
+    D.duzenlenen = kod; const f = $('#ogrForm'); f.ad.value = x.ad; f.eposta.value = x.eposta || ''; f.tel.value = x.tel || '';
+    $('#ogrFormBaslik').textContent = x.ad + ' · düzenle'; $('#ogrVazgec').hidden = false; window.scrollTo(0, 0);
+  } else if (b.dataset.sil) {
+    if (b.dataset.onay !== '1') { b.dataset.onay = '1'; b.textContent = 'Emin misin?'; setTimeout(() => { b.dataset.onay = ''; b.textContent = 'Çıkar'; }, 3000); return; }
+    const ok = await kaydetKadro((v) => { v.ogrenciler = v.ogrenciler.filter((o) => o.kod !== kod); }, 'Teknik Lab: kadro güncellendi');
+    if (ok) { D.secili.delete(kod); if (D.odev.odevler[kod]) await kaydetOdev((v) => { delete v.odevler[kod]; }, 'Teknik Lab: ödev silindi'); }
+  }
+};
+
+$('#ayarForm').onsubmit = async (e) => {
+  e.preventDefault(); const f = e.target;
+  D.token = f.token.value.trim(); D.sifre = f.sifre.value;
+  if (!D.token || !D.sifre) return cizAyar('İkisini de doldur.');
+  yerel.koy('token', D.token); yerel.koy('sifre', D.sifre);
+  if (await yukle()) { toast('Bağlandı'); sekme(D.kadro.ogrenciler.length ? 'antrenman' : 'ogrenciler'); }
+};
+$('#webhookForm').onsubmit = async (e) => {
+  e.preventDefault(); const u = e.target.webhook.value.trim();
+  if (u && !/^https:\/\//.test(u)) return toast('Adres https:// ile başlamalı.');
+  if (await kaydetKadro((v) => { v.webhook = u; }, 'Teknik Lab: bildirim ayarı')) toast('Wix adresi kaydedildi');
+};
+$('#testBtn').onclick = async () => {
+  const kod = $('#testOgr').value; const m = $('#testMesaj');
+  if (!kod) return; if (!D.odev.odevler[kod]) { m.textContent = 'Bu öğrencinin işaretli ödevi yok, önce ödev işaretle.'; return; }
+  m.textContent = 'Gönderiliyor…';
+  const r = await gh('/actions/workflows/' + IS_DOSYASI + '/dispatches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: DAL, inputs: { kod } }) });
+  m.innerHTML = r.status === 204 ? 'Test işi başladı. 1–2 dakika içinde veliye bildirim düşmeli. <a target="_blank" rel="noopener" href="https://github.com/' + SAHIP + '/' + REPO + '/actions">İşin durumunu gör</a>'
+    : r.status === 403 ? 'GitHub anahtarına "Actions: Read and write" izni verilmemiş.' : 'Başlatılamadı (' + r.status + ').';
+};
+$('#cikis').onclick = () => { yerel.koy('token', ''); yerel.koy('sifre', ''); D.token = D.sifre = ''; D.kadro = { ogrenciler: [], webhook: '' }; ciz(); sekme('ayarlar'); durum('Çıkış yapıldı'); };
+
+varsayilanZaman();
+cizSecim();
+if (await yukle()) sekme(D.kadro.ogrenciler.length ? 'antrenman' : 'ogrenciler');
+setInterval(() => { if (!document.hidden) cizOgrenciler(); }, 60000);
+</script>
+</body>
+</html>
