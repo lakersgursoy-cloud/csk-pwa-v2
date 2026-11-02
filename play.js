@@ -2,8 +2,9 @@
 function renderPlay(container, user) {
   container.innerHTML = `
     <div class="card">
-      <h2>ÇSK PLAY</h2>
-      <p class="mut">Kulüp hayatını keşfet. Maskotlar, antrenman ritmi, aidiyet.</p>
+      <h2>Anka’nın Yükselişi</h2>
+      <p class="mut">Tut. Zamanında bırak. Kaydır: şerit. Uygulamanın içinde.</p>
+      <button class="btn" id="ankaOpen" type="button">BAŞLA</button>
     </div>
     <div class="mascot-line">${kankaSpeak("home")}</div>
     <div class="card">
@@ -22,4 +23,6 @@ function renderPlay(container, user) {
       <a href="./teknik-lab/" class="btn" style="display:block;text-align:center;text-decoration:none;line-height:46px">Teknik Lab’a git</a>
     </div>
   `;
+  const open = document.getElementById("ankaOpen");
+  if (open) open.onclick = () => { if (window.openAnka) window.openAnka(); };
 }
