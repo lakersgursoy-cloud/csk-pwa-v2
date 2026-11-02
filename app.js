@@ -2,6 +2,12 @@
 const appEl = document.getElementById("app");
 let currentUser = null;
 let currentScreen = "home";
+let ankaStop = null;
+
+window.openAnka = () => {
+  currentScreen = "anka";
+  render();
+};
 
 function loadUser() {
   try { return JSON.parse(localStorage.getItem("cskUser") || "null"); } catch { return null; }
@@ -41,7 +47,12 @@ function renderLogin() {
 }
 
 function renderShell() {
+  if (ankaStop) {
+    ankaStop();
+    ankaStop = null;
+  }
   const u = currentUser;
+  const marked = currentScreen === "anka" ? "play" : currentScreen;
   const mascot = pickMascot(u, currentScreen);
   appEl.innerHTML = `
     <div class="shell">
@@ -51,10 +62,10 @@ function renderShell() {
           <span class="user-chip">${u.name} · ${u.title}</span>
         </div>
         <nav>
-          <button data-s="home" aria-current="${currentScreen==='home'?'page':'false'}">Ana</button>
-          <button data-s="antrenman" aria-current="${currentScreen==='antrenman'?'page':'false'}">Antrenman</button>
-          <button data-s="takim" aria-current="${currentScreen==='takim'?'page':'false'}">Takım</button>
-          <button data-s="play" aria-current="${currentScreen==='play'?'page':'false'}">Play</button>
+          <button data-s="home" aria-current="${marked==='home'?'page':'false'}">Ana</button>
+          <button data-s="antrenman" aria-current="${marked==='antrenman'?'page':'false'}">Antrenman</button>
+          <button data-s="takim" aria-current="${marked==='takim'?'page':'false'}">Takım</button>
+          <button data-s="play" aria-current="${marked==='play'?'page':'false'}">Play</button>
         </nav>
       </header>
       <main id="main"></main>
@@ -70,6 +81,13 @@ function renderShell() {
   document.getElementById("logout").onclick = logout;
 
   const main = document.getElementById("main");
+  if (currentScreen === "anka") {
+    ankaStop = mountAnka(main, () => {
+      currentScreen = "play";
+      render();
+    });
+    return;
+  }
   if (currentScreen === "play") {
     renderPlay(main, u);
   } else if (currentScreen === "antrenman") {
@@ -96,7 +114,6 @@ function renderShell() {
       </div>
     `;
   } else {
-    // home
     main.innerHTML = `
       <div class="mascot-line">${kankaSpeak("home")}</div>
       <div class="card">
