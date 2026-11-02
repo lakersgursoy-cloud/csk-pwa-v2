@@ -49,13 +49,3 @@ button.btn.ghost { background: transparent; border: 1px solid var(--line); color
 
 [hidden] { display: none !important; }
 
-main.anka-stage { padding: 0 0 72px; display: block; }
-.anka-fit { position: relative; height: calc(100dvh - 168px); background: #07090c; touch-action: none; }
-.anka-fit canvas { width: 100%; height: 100%; display: block; touch-action: none; }
-.anka-back, .anka-dash { position: absolute; z-index: 2; border: 1px solid #2c3628; background: rgba(7,9,12,.92); color: #d5e2b0; font-family: var(--display); letter-spacing: .12em; }
-.anka-back { top: 10px; left: 10px; height: 36px; padding: 0 12px; }
-.anka-dash { right: 12px; bottom: 16px; width: 64px; height: 64px; }
-.anka-over { position: absolute; inset: 0; z-index: 3; background: rgba(7,9,12,.86); display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 20px; }
-.anka-kicker { margin: 0; letter-spacing: .16em; font-size: 12px; color: #8fa35a; }
-.anka-over h2 { margin: 0; font-family: var(--display); font-size: 48px; }
-.anka-over p { margin: 0 0 8px; font-size: 14px; }

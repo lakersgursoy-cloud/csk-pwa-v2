@@ -17,6 +17,18 @@ Aç: `index.html` (veya GitHub Pages açıldıktan sonra canlı adres)
 - Takım (kadro)
 - Play (maskotlar + Teknik Lab bağlantısı)
 
+## Anka'nın Yükselişi
+`anka.js` üretilmiş bir dosyadır; elle düzenlenmez. Oyunun tek kaynağı native uygulamadaki
+`ukurambar-y/mobile/csk-native/anka/` klasörüdür (motor, Anka illüstrasyonu, dünyalar, HUD, kayıtlar).
+Güncellemek için o depoda:
+
+```sh
+cd mobile/csk-native && node scripts/build-anka.mjs --pwa ../../../csk-pwa-v2/anka.js
+```
+
+Oyun tam ekran, aynı kökenli bir iframe'de açılır; uygulama gezinmesi gizlenir, çıkışta Play ekranına dönülür.
+Kayıtlar (`cskAnka`, `cskAnkaStats`) aynı localStorage'da kalır; eski rekor yeni lobide "İleri" rekoru olarak görünür.
+
 ## Teknik Lab
 Koç ödev ve bildirim sistemi: `teknik-lab/` klasörü.
 
