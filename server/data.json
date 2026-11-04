@@ -136,24 +136,9 @@
       {
         "program": "masters",
         "days": [
-          "Çarşamba",
-          "Cuma"
+          "Çarşamba"
         ],
         "time": "20.30–22.00"
-      },
-      {
-        "program": "altyapi",
-        "days": [
-          "Cumartesi"
-        ],
-        "time": "11.00–12.30"
-      },
-      {
-        "program": "altyapi",
-        "days": [
-          "Pazar"
-        ],
-        "time": "15.30–17.00"
       }
     ]
   },
