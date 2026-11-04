@@ -1,0 +1,16 @@
+{
+  "name": "csk-public-api",
+  "version": "1.0.0",
+  "description": "Çukurambar Spor Kulübü public read-only API and MCP server",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "^3.25.0"
+  }
+}

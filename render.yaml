@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: csk-public-api
+    runtime: node
+    plan: free
+    branch: render-deploy
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true

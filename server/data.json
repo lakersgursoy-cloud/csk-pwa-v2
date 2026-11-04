@@ -1,0 +1,183 @@
+{
+  "schema": "csk.club.v1",
+  "reviewed": "2026-11-04",
+  "club": {
+    "name": "Çukurambar Spor Kulübü",
+    "alternateNames": [
+      "Çukurambar Yüzme Kulübü",
+      "ÇSK"
+    ],
+    "shortName": "ÇSK",
+    "sport": "swimming",
+    "city": "Ankara",
+    "district": "Çankaya",
+    "registeredDate": "2023-02-27",
+    "hasOwnPool": false,
+    "founder": {
+      "name": "Yiğit Gürsoy",
+      "roles": [
+        "Kurucu Başkan",
+        "Baş Antrenör"
+      ]
+    },
+    "philosophy": {
+      "motto": "Non Frangor",
+      "meaningTr": "Kırılmam",
+      "meaningEn": "I do not break"
+    },
+    "tagline": "Her kulaçta doğru teknik, her yaşta gerçek gelişim."
+  },
+  "links": {
+    "email": "cukurambarsporkulubu@gmail.com",
+    "website": "https://www.cukurambaryuzmekulubu.com",
+    "booking": "https://www.cukurambaryuzmekulubu.com/online-yer-ay-rt-n",
+    "programs": "https://www.cukurambaryuzmekulubu.com/pricing-plans/plans-pricing",
+    "instagram": "https://www.instagram.com/cukurambaryuzmekulubu"
+  },
+  "programs": [
+    {
+      "id": "minikler",
+      "name": "Minikler Yüzme",
+      "audience": "4–7 yaş",
+      "durationMinutes": 50,
+      "focus": "Su güvenliği"
+    },
+    {
+      "id": "gelisim",
+      "name": "Gelişim Grubu",
+      "audience": "7–12 yaş",
+      "durationMinutes": 50,
+      "focus": "Dört stil"
+    },
+    {
+      "id": "yetiskin",
+      "name": "Yetişkin Yüzme",
+      "audience": "Yetişkin grup",
+      "durationMinutes": 50
+    },
+    {
+      "id": "masters",
+      "name": "Masters",
+      "audience": "25 yaş ve üzeri",
+      "durationMinutes": 90,
+      "venue": "oran"
+    },
+    {
+      "id": "altyapi",
+      "name": "Altyapı",
+      "audience": "Yayımlanmadı",
+      "durationMinutes": 90,
+      "venue": "oran"
+    },
+    {
+      "id": "performans",
+      "name": "Performans Takım",
+      "audience": "Lisanslı takım",
+      "durationMinutes": 90,
+      "venue": "oran"
+    },
+    {
+      "id": "sporcu-ozel",
+      "name": "Sporcu Özel Yüzme Dersi",
+      "audience": "Sporcu",
+      "durationMinutes": 50,
+      "booking": "Yönetici onaylı talep"
+    },
+    {
+      "id": "yetiskin-ozel",
+      "name": "Yetişkin Özel Yüzme Dersi",
+      "audience": "Yetişkin",
+      "durationMinutes": 50,
+      "venue": "sogutozu",
+      "booking": "Kulüp onaylı randevu"
+    }
+  ],
+  "facilities": [
+    {
+      "id": "sogutozu",
+      "name": "Grand Mercure",
+      "area": "Söğütözü",
+      "alsoCalled": "Çukurambar konumu",
+      "address": "Beştepeler Mah. Yaşam Cd. 1. Sk. No:7/B, Yenimahalle/Ankara",
+      "use": "Yetişkin birebir dersleri",
+      "ownedByClub": false,
+      "page": "https://www.cukurambaryuzmekulubu.com/sogutozu-yuzme-kursu"
+    },
+    {
+      "id": "hosdere",
+      "name": "Portakal Çiçeği",
+      "area": "Hoşdere",
+      "use": "Çocuk yüzme dersleri",
+      "ownedByClub": false,
+      "page": "https://www.cukurambaryuzmekulubu.com/hosdere-yuzme-kursu"
+    },
+    {
+      "id": "oran",
+      "name": "MoveOn",
+      "area": "Or-An",
+      "address": "İlkbahar Güneypark Küme Evleri 19B",
+      "use": "Çocuk dersleri, yarış takımı, Masters",
+      "ownedByClub": false,
+      "page": "https://www.cukurambaryuzmekulubu.com/oran-yuzme-kursu"
+    }
+  ],
+  "publishedSchedule": {
+    "venue": "oran",
+    "note": "Saatler değişebilir; kayıttan önce kulüpten teyit edin.",
+    "sessions": [
+      {
+        "program": "performans",
+        "days": [
+          "Çarşamba",
+          "Cuma"
+        ],
+        "time": "19.00–20.30"
+      },
+      {
+        "program": "masters",
+        "days": [
+          "Çarşamba",
+          "Cuma"
+        ],
+        "time": "20.30–22.00"
+      },
+      {
+        "program": "altyapi",
+        "days": [
+          "Cumartesi"
+        ],
+        "time": "11.00–12.30"
+      },
+      {
+        "program": "altyapi",
+        "days": [
+          "Pazar"
+        ],
+        "time": "15.30–17.00"
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "teknik-lab",
+      "name": "ÇSK Teknik Lab",
+      "summary": "Hedef tekniği, kısmen doğru hareketi ve sık hatayı yan yana gösteren, kulüp tarafından geliştirilen 3D yüzme tekniği aracı."
+    },
+    {
+      "id": "kanka",
+      "name": "kAnka",
+      "summary": "Kulübün yeşil-beyaz anka kuşu karakteri ve asistanı."
+    },
+    {
+      "id": "kayip-medeniyet",
+      "name": "Kayıp Medeniyet: Anka’nın Yedi Vadisi",
+      "status": "Geliştiriliyor",
+      "summary": "Çocuklar için 3D macera ve bulmaca oyunu."
+    }
+  ],
+  "notPublished": [
+    "phone",
+    "federationCode",
+    "fees"
+  ]
+}
