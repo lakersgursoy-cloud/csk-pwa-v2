@@ -22,7 +22,7 @@ npm start
 
 ## Render
 
-Yeni bir Web Service oluşturun. Mevcut servislere dokunmayın.
+Yeni bir Web Service oluşturun. Mevcut servislere dokunmayın. Root Directory boş bırakılırsa kökteki `package.json` aynı servisi başlatır.
 
 - Dal: `render-deploy`
 - Root Directory: `server`
