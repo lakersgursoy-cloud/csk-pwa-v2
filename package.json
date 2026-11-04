@@ -1,0 +1,12 @@
+{
+  "name": "csk-public-api-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Render entry point; the service itself lives in server/",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "postinstall": "npm ci --prefix server --no-audit --no-fund",
+    "start": "npm start --prefix server",
+    "test": "npm test --prefix server"
+  }
+}
