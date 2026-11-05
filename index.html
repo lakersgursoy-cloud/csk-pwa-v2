@@ -10112,10 +10112,10 @@ const NARR = (() => {
 
 </script>
 <script>/* Teknik Lab · Meta Quest. Yalnızca bağımsız VR sayfasında yüklenir; telefon uygulamasındaki sayfaya girmez.
-   Seçili hareket gerçek boyutta önünüzde oynar: sağ tetik oynat/durdur, sağ çubuk sağ-sol etrafında dön, yukarı-aşağı hız. */
+   Seçili hareket gerçek boyutta önünüzde oynar. Sağ tetik oynat/durdur, A sonraki bölüm, B önceki bölüm, çubuk etrafında dön ve hız, kavrama tutup çevir. */
 (function () {
   const TURN = Math.PI / 6, DISTANCE = 1.6, FLOOR_Y = -1.05, SHOWN = 'y', HIDDEN_MASK = 1 << 6;
-  const pad = { armed: true, trigger: false };
+  const pad = { armed: true, trigger: false, a: false, b: false, gripX: null };
   let session = null, saved = null, angle = 0, tick = 0;
   const hidden = [];
   const button = document.createElement('button');
@@ -10133,12 +10133,36 @@ const NARR = (() => {
     });
   }
   function restoreLayers() { masks.forEach((mask, o) => { o.layers.mask = mask; }); masks.clear(); }
-  function steer(frameSession) {
+  const label = { canvas: document.createElement('canvas'), texture: null, text: '' };
+  label.canvas.width = 1024; label.canvas.height = 128;
+  function showLabel(text) {
+    if (text === label.text || !label.texture) return;
+    label.text = text;
+    const draw = label.canvas.getContext('2d');
+    draw.clearRect(0, 0, 1024, 128);
+    draw.fillStyle = '#f2c14e'; draw.font = '700 58px sans-serif'; draw.textAlign = 'center'; draw.textBaseline = 'middle';
+    draw.fillText(text.slice(0, 40), 512, 64);
+    label.texture.needsUpdate = true;
+  }
+  function scenes() { return STK().scenes.map(s => s.id); }
+  function stepScene(direction) {
+    const list = scenes(), next = (list.indexOf(S.scene) + direction + list.length) % list.length;
+    selectScene(list[next], null, { keepView: true });
+    S.playing = true;
+  }
+  function steer(frameSession, xrFrame) {
     const source = [...frameSession.inputSources].find(s => s.handedness === 'right' && s.gamepad);
     if (!source) return;
     const gp = source.gamepad, x = gp.axes[2] || 0, y = gp.axes[3] || 0, pressed = !!gp.buttons[0]?.pressed;
     if (pressed && !pad.trigger) S.playing = !S.playing;
     pad.trigger = pressed;
+    const a = !!gp.buttons[4]?.pressed, b = !!gp.buttons[5]?.pressed;
+    if (a && !pad.a) stepScene(1);
+    if (b && !pad.b) stepScene(-1);
+    pad.a = a; pad.b = b;
+    const space = renderer.xr.getReferenceSpace(), grip = gp.buttons[1]?.pressed && source.gripSpace && space ? xrFrame.getPose(source.gripSpace, space) : null;
+    if (grip) { if (pad.gripX !== null) angle -= (grip.transform.position.x - pad.gripX) * 2.5; pad.gripX = grip.transform.position.x; }
+    else pad.gripX = null;
     if (Math.abs(x) < 0.3 && Math.abs(y) < 0.3) pad.armed = true;
     if (!pad.armed) return;
     if (Math.abs(x) > 0.7) { angle += Math.sign(x) * TURN; pad.armed = false; }
@@ -10152,6 +10176,7 @@ const NARR = (() => {
     rig.position.set(target.x + Math.sin(angle) * DISTANCE, FLOOR_Y, target.z + Math.cos(angle) * DISTANCE);
     rig.rotation.y = angle;
     scene.fog = null;
+    showLabel(sceneOf(S.scene).name || sceneOf(S.scene).title || S.scene);
     renderer.setClearColor(0x0c1720);
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
@@ -10173,6 +10198,9 @@ const NARR = (() => {
     mark.rotation.x = -Math.PI / 2;
     mark.position.set(0, 0.01, -DISTANCE);
     rig.add(mark);
+    label.texture = new THREE.CanvasTexture(label.canvas); label.texture.encoding = THREE.sRGBEncoding; label.text = '';
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.2), new THREE.MeshBasicMaterial({ map: label.texture, transparent: true, depthTest: false }));
+    sign.position.set(0, 2.15, -DISTANCE - 1.2); rig.add(sign);
   }
   function enter(xrSession) {
     session = xrSession;
@@ -10192,7 +10220,7 @@ const NARR = (() => {
     saved.parked = false;
     frame = () => { saved.parked = true; };
     renderer.setAnimationLoop((now, xrFrame) => {
-      if (xrFrame) steer(xrFrame.session);
+      if (xrFrame) steer(xrFrame.session, xrFrame);
       window.requestAnimationFrame = () => 0;
       try { page(now); } finally { window.requestAnimationFrame = schedule; }
     });
@@ -10223,6 +10251,6 @@ const NARR = (() => {
     const ready = glOK && navigator.xr && await navigator.xr.isSessionSupported('immersive-vr').catch(() => false);
     if (ready) button.disabled = false; else say('Bu tarayıcıda VR yok');
   })();
-  window.LAB_XR = { active: () => !!session, angle: () => angle, swimmerVisibleToEyes: () => { let n = 0; scene.traverse(o => { if (o.isMesh && o.visible && o.layers.mask === 1) n++; }); return n; } };
+  window.LAB_XR = { label: () => label.text, active: () => !!session, angle: () => angle, swimmerVisibleToEyes: () => { let n = 0; scene.traverse(o => { if (o.isMesh && o.visible && o.layers.mask === 1) n++; }); return n; } };
 })();
 </script></body></html>
