@@ -1,47 +1,37 @@
 // Bölüm akışı: saf mantık, Three.js'e bağlı değil. tests/story.test.mjs ile sınanır.
 // Tarihsel sonuç sabittir; oyuncunun seçimi yalnızca kişisel hikâyeyi değiştirir.
+import { CHAPTERS } from './chapters.js';
 
-export const CHOICES = {
-  yusuf: {
-    label: "Yusuf'un elini sar",
-    result: "Usta sana bağırdı. Ama Yusuf o geceden sonra adını hiç unutmadı.",
-    memory: "Yusuf'un yanık elini sardığın an.",
-  },
-  usta: {
-    label: 'Ustanın yanında kal',
-    result: 'Usta başını salladı. Yusuf ise o geceden sonra seninle hiç konuşmadı.',
-    memory: 'Ateş emrini ustanın yanında beklediğin an.',
-  },
-};
+export const initialState = () => ({ stage: 'museum', chapter: null, character: null, choice: null, listened: [], done: {} });
+export const currentCharacter = (s) => CHAPTERS[s.chapter]?.characters[s.character] ?? null;
 
-export const initialState = () => ({ stage: 'museum', choice: null, listened: [], trophy: null });
-
-const TRANSITIONS = {
-  museum: { doorIstanbul: 'traveller' },
-  traveller: { touchSoldier: 'wakeInCamp' },
-  wakeInCamp: { takeWad: 'carryWad' },
-  carryWad: { deliverWad: 'choice' },
-  outcome: { outcomeDone: 'cannon' },
-  cannon: { fire: 'aftermath' },
-  aftermath: { returnToMuseum: 'museum' },
+const NEXT = {
+  wake: { takeItem: 'carry' }, carry: { deliver: 'choice' }, outcome: { outcomeDone: 'climax' },
+  climax: { act: 'aftermath' }, finale: { finish: 'museum' },
 };
 
 export function advance(state, event, payload) {
-  if (event === 'listen' && state.stage === 'traveller') {
-    if (state.listened.includes(payload)) return state;
-    return { ...state, listened: [...state.listened, payload] };
+  const { stage } = state;
+  if (stage === 'museum' && event === 'door') {
+    if (!CHAPTERS[payload]) return state;
+    return { ...state, stage: 'traveller', chapter: payload, character: null, choice: null, listened: [] };
   }
-  if (state.stage === 'choice' && event === 'choose') {
-    if (!CHOICES[payload]) return state;
+  if (stage === 'traveller' && event === 'listen') {
+    return state.listened.includes(payload) ? state : { ...state, listened: [...state.listened, payload] };
+  }
+  if (stage === 'traveller' && event === 'touch') {
+    if (!CHAPTERS[state.chapter].characters[payload]) return state;
+    return { ...state, stage: 'wake', character: payload, choice: null };
+  }
+  if (stage === 'choice' && event === 'choose') {
+    if (!currentCharacter(state).options[payload]) return state;
     return { ...state, stage: 'outcome', choice: payload };
   }
-  const stage = TRANSITIONS[state.stage]?.[event];
-  if (!stage) return state;
-  const next = { ...state, stage };
-  if (event === 'returnToMuseum') {
-    next.trophy = { id: 'harita-1453', choice: state.choice };
-    next.choice = null;
-    next.listened = [];
+  if (stage === 'aftermath' && event === 'collect') {
+    const done = { ...state.done, [state.chapter]: { ...state.done[state.chapter], [state.character]: state.choice } };
+    const all = Object.keys(CHAPTERS[state.chapter].characters).every(c => done[state.chapter][c]);
+    return { ...state, done, stage: all ? 'finale' : 'museum' };
   }
-  return next;
+  const to = NEXT[stage]?.[event];
+  return to ? { ...state, stage: to } : state;
 }

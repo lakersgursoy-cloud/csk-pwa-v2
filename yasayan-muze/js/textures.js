@@ -104,3 +104,26 @@ export function drawMap() {
   g.strokeStyle = '#8c1d18'; g.lineWidth = 3; g.setLineDash([8, 6]); g.strokeRect(30, 150, 45, 130);
   return tex(c);
 }
+
+export function cobbles(rx, ry) {
+  const [c, g] = canvas(256, 256); g.fillStyle = '#4d4842'; g.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { const v = 88 + rnd() * 42 | 0; g.fillStyle = `rgb(${v},${v - 3},${v - 8})`; g.beginPath(); g.ellipse(x * 32 + (y % 2) * 16, y * 32 + 16, 14, 13, 0, 0, 7); g.fill(); }
+  return tex(c, rx, ry);
+}
+export function plasterTone(color, rx, ry) { const [c, g] = canvas(128, 128); g.fillStyle = color; g.fillRect(0, 0, 128, 128); speckle(g, 128, 128, 1400, .1); return tex(c, rx, ry); }
+export function ashlar(rx, ry) {
+  const [c, g] = canvas(256, 256); g.fillStyle = '#7d7669'; g.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 32) for (let x = (y / 32 % 2) * -32; x < 256; x += 64) { const v = 112 + rnd() * 24 | 0; g.fillStyle = `rgb(${v},${v - 4},${v - 12})`; g.fillRect(x + 1, y + 1, 62, 30); }
+  speckle(g, 256, 256, 2200, .1); return tex(c, rx, ry);
+}
+export function daySky() {
+  const [c, g] = canvas(32, 256), s = g.createLinearGradient(0, 0, 0, 256);
+  s.addColorStop(0, '#6c8197'); s.addColorStop(.42, '#b3bcbf'); s.addColorStop(.5, '#d9d3c4'); s.addColorStop(.54, '#56504a'); s.addColorStop(1, '#3a342e');
+  g.fillStyle = s; g.fillRect(0, 0, 32, 256); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+export function drawPamphlet() {
+  const [c, g] = canvas(512, 384); g.fillStyle = '#e2d7bd'; g.fillRect(0, 0, 512, 384); speckle(g, 512, 384, 3000, .08);
+  g.fillStyle = '#2a211a'; g.textAlign = 'center'; g.font = 'bold 42px Georgia'; g.fillText('AUX ARMES', 256, 90); g.font = '24px Georgia'; g.fillText('Citoyens de Paris', 256, 135);
+  g.fillRect(90, 160, 332, 3); for (let y = 190; y < 330; y += 24) g.fillRect(90, y, 332 - (y % 48), 7); g.font = '18px Georgia'; g.fillText('14 juillet 1789', 256, 360);
+  return tex(c);
+}

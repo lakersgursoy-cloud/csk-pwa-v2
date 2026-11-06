@@ -6,16 +6,19 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 
 ## Bu sürümde olanlar
 
-- Gezilebilir müze salonu, konuşan heykel, iki zaman kapısı (1453 açık, 1789 kilitli)
-- Zaman Yolcusu: görünmeden gezme, askerleri dinleme
-- Hafıza Geçişi: yardımcıya dokunma, kararma, dönem kollu ellerle birinci şahıs bakışı
-- Tapa taşıma, Yusuf/Usta kararı, top atışı, tarihsel sonucun değişmemesi
-- Müzeye dönen harita ve dokununca canlanan anı (tarayıcıda hatırlanır)
+- Gezilebilir müze salonu, konuşan heykel, iki açık zaman kapısı
+- İstanbul 1453: topçu yardımcısı, Bizans savunmacısı, esnaf
+- Paris 1789: matbaa çalışanı, Fransız Muhafızı askeri, pazarcı
+- Her karakterde görev, karar, kişisel sonuç ve aynı tarihî an
+- Üç karakter bitince ortak final; karakterleri tamamlamak zorunlu değil
+- Müzede kalan iki nesne ve dokununca canlanan anı (tarayıcıda hatırlanır)
 - Işınlanma ve akıcı hareket, 30° adımlı dönüş
+
+Yusuf, Nikolas, Eleni, Pierre ve Anna kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
 
 ## Henüz olmayanlar
 
-Paris 1789, Bizans savunmacısı ve esnaf, ortak final, seslendirme, gerçekçi mimari ve modeller.
+Seslendirme ve gerçekçi model, doku, animasyon. Bunlar için ses kaydı ve 3D varlıklar gerekir.
 
 ## Kontroller (Quest 3)
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { advance, initialState, CHOICES } from './story.js';
-import { buildMuseum, build1453, makeHand } from './worlds.js';
+import { advance, initialState, currentCharacter } from './story.js';
+import { CHAPTERS } from './chapters.js';
+import { buildMuseum, buildSiege, buildCity, buildParis, figure, glow, box, makeHand, makeItem } from './worlds.js';
 import { Panel } from './ui.js';
 import { Sound } from './audio.js';
 
@@ -15,21 +16,22 @@ document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 400), rig = new THREE.Group();
 camera.position.y = 1.62; rig.add(camera); scene.add(rig);
-const museum = buildMuseum(), siege = build1453(); scene.add(museum.group, siege.group); siege.group.visible = false;
-const sound = new Sound();
-let world = museum, state = initialState(), mode = load().mode === 'akici' ? 'akici' : 'isinlanma', busy = false, time = 0;
-const saved = load(); if (saved.trophy) state.trophy = saved.trophy;
+const museum = buildMuseum(), worlds = { museum, siege: buildSiege(), city: buildCity(), paris: buildParis() }, sound = new Sound();
+for (const w of Object.values(worlds)) { scene.add(w.group); w.group.visible = false; }
+const lit = (o) => new THREE.MeshLambertMaterial(o);
+let world = museum, state = initialState(), mode = load().mode === 'akici' ? 'akici' : 'isinlanma', busy = false, time = 0, bounds = museum.bounds, floorY = 0;
+const saved = load(); if (saved.done) state.done = saved.done;
 
 // Kararma küresi: sahne geçişleri kameraya bağlıdır.
 const veil = new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 8), new THREE.MeshBasicMaterial({ color: '#000', side: THREE.BackSide, transparent: true, opacity: 1, depthTest: false, depthWrite: false, fog: false }));
 veil.renderOrder = 999; camera.add(veil);
-let fadeJob = null;
+let fadeJob = null; const timers = [];
 const fade = (to, s) => new Promise(res => { fadeJob = { from: veil.material.opacity, to, s, t: 0, res }; });
-const wait = (s) => new Promise(r => { timers.push({ t: s, r }); }); const timers = [];
+const wait = (s) => new Promise(r => { timers.push({ t: s, r }); });
 
 // Altyazı ve seçim panelleri dünyada sabit durur; rahatsız edici biçimde kafaya kilitlenmez.
 const sub = new Panel(1.35, .5); sub.visible = false; scene.add(sub);
-const headPos = new THREE.Vector3(), headDir = new THREE.Vector3();
+const headPos = new THREE.Vector3(), headDir = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 function head() { camera.getWorldPosition(headPos); camera.getWorldDirection(headDir); headDir.y = 0; headDir.normalize(); }
 function place(o, dist, dy = -.2, side = 0) { head(); o.position.copy(headPos).addScaledVector(headDir, dist); o.position.y += dy; o.position.x += -headDir.z * side; o.position.z += headDir.x * side; o.lookAt(headPos.x, o.position.y, headPos.z); }
 let subT = 0, lastSay = '';
@@ -38,91 +40,123 @@ const hint = (t) => { $('hud').textContent = renderer.xr.isPresenting ? '' : t; 
 
 // Etkileşim
 const items = [];
-const on = (hit, label, fn, active = () => true) => { items.push({ hit, label, fn, active }); };
-function tick() { museum.comfort.set(`Hareket: ${mode === 'akici' ? 'Akıcı' : 'Işınlanma'}`, 'değiştirmek için dokun'); }
+const on = (hit, label, fn, active = () => true) => { const it = { hit, label, fn, active }; items.push(it); return it; };
+const tick = () => museum.comfort.set(`Hareket: ${mode === 'akici' ? 'Akıcı' : 'Işınlanma'}`, 'değiştirmek için dokun');
 tick();
 on(museum.comfort, 'Hareket biçimi', () => { mode = mode === 'akici' ? 'isinlanma' : 'akici'; save({ ...load(), mode }); tick(); sound.chime(); }, () => world === museum);
-on(museum.door1453.userData.hit, '1453 · İstanbul', () => openDoor(), () => state.stage === 'museum' && !busy);
-on(museum.door1789.userData.hit, '1789 · Paris', () => { say('Paris kapısı henüz açılmıyor. Bu prototipte yalnızca 1453 oynanabilir.', '1789'); }, () => state.stage === 'museum' && !busy);
-on(museum.pedHit, 'Tarihî harita kopyası', () => replay(), () => world === museum && !!state.trophy && !busy);
-on(siege.helperHit, 'Topçu yardımcısına dokun', () => memoryShift(), () => state.stage === 'traveller' && !busy);
-on(siege.wadHit, 'Ahşap tapa', () => { go('takeWad'); holdWad(); }, () => state.stage === 'wakeInCamp');
-on(siege.gunHit, 'Tapayı topa ver', () => { go('deliverWad'); }, () => state.stage === 'carryWad');
-on(siege.linHit, 'Fitili ateşe değdir', () => go('fire'), () => state.stage === 'cannon' && !busy);
-on(siege.mapHit, 'Haritayı al', () => go('returnToMuseum'), () => state.stage === 'aftermath' && siege.mapItem.visible && !busy);
-const choiceUi = Object.keys(CHOICES).map((id, i) => { const p = new Panel(.95, .32, { size: 58 }).set(CHOICES[id].label); p.visible = false; scene.add(p); on(p, CHOICES[id].label, () => go('choose', id), () => state.stage === 'choice'); p.userData.side = i ? .54 : -.54; return p; });
+for (const [id, ch] of Object.entries(CHAPTERS)) {
+  on(museum.doors[id].userData.hit, `${ch.year} · ${ch.place}`, () => openDoor(id), () => state.stage === 'museum' && !busy);
+  on(museum.pedestals[id].hit, ch.trophy.name, () => replay(id), () => world === museum && !!state.done[id] && !busy);
+}
+const hasTrophy = (id) => { museum.pedestals[id].map.visible = museum.pedestals[id].glow.visible = !!state.done[id]; museum.pedestals[id].glow.material.opacity = .3; };
+Object.keys(CHAPTERS).forEach(hasTrophy);
+
+// Zaman yolcusunun gördüğü hafıza izleri
+const traces = {};
+for (const [cid, ch] of Object.entries(CHAPTERS)) {
+  traces[cid] = Object.entries(ch.characters).map(([id, c], i) => {
+    const [x, z] = ch.traces[i], g = new THREE.Group(), f = figure(c), hl = glow(2.4, '170,210,255'), plate = new Panel(1.5, .24, { size: 62 }).set(c.label);
+    g.position.set(x, 0, z); f.rotation.y = Math.atan2(ch.arrive.at[0] - x, ch.arrive.at[1] - z); hl.position.y = 1.05; plate.position.y = 2.15; g.add(f, hl, plate);
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(.85, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1; g.add(hit); worlds[ch.world].group.add(g); g.visible = false;
+    on(hit, c.label, () => memoryShift(id), () => state.stage === 'traveller' && state.chapter === cid && !busy);
+    return { id, g, hl, plate, f };
+  });
+}
+// Karakter sahnesi nesneleri: her geçişte etkin dünyaya taşınır.
+const prop = { group: new THREE.Group(), crate: box(1.1, .7, .7, lit({ color: '#5a3d22' })), kinds: {}, itemGlow: glow(.7, '255,210,120'), targetGlow: glow(1.3, '255,200,110'), climaxGlow: glow(1, '255,150,70') };
+const pHit = (r) => new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+Object.assign(prop, { itemHit: pHit(.5), targetHit: pHit(1), climaxHit: pHit(.9), trophyHit: pHit(.6) });
+prop.group.add(prop.crate, prop.itemGlow, prop.targetGlow, prop.climaxGlow, prop.itemHit, prop.targetHit, prop.climaxHit, prop.trophyHit);
+for (const k of ['wad', 'basket', 'bread', 'paper', 'box']) { prop.kinds[k] = makeItem(k); prop.kinds[k].visible = false; prop.group.add(prop.kinds[k]); }
+prop.trophy = new THREE.Group(); prop.group.add(prop.trophy);
+prop.trophy.add(new THREE.Mesh(new THREE.PlaneGeometry(.7, .52), new THREE.MeshBasicMaterial({ color: '#d8caa6' }))); prop.trophy.children[0].rotation.x = -Math.PI / 2;
+let held = null;
+const itemOn = on(prop.itemHit, '', () => { go('takeItem'); holdItem(); }, () => state.stage === 'wake' && !busy);
+const targetOn = on(prop.targetHit, '', () => go('deliver'), () => state.stage === 'carry');
+const climaxOn = on(prop.climaxHit, '', () => go('act'), () => state.stage === 'climax' && !busy);
+const trophyOn = on(prop.trophyHit, '', () => go('collect'), () => state.stage === 'aftermath' && prop.trophy.visible && !busy);
+const choiceUi = [-.54, .54].map((side) => { const p = new Panel(.95, .32, { size: 54 }); p.visible = false; scene.add(p); const it = on(p, '', () => go('choose', p.userData.id), () => state.stage === 'choice'); Object.assign(p.userData, { side, it }); return p; });
+
+function setupProps(c) {
+  const g = worlds[c.world].group, y = c.floorY, [ix, iz] = c.item.at, m = prop.kinds[c.item.kind]; g.add(prop.group);
+  for (const k in prop.kinds) { prop.kinds[k].visible = false; prop.group.add(prop.kinds[k]); }
+  prop.crate.position.set(ix, y + .35, iz); m.visible = true; m.position.set(ix, y + .84, iz); m.rotation.set(0, 0, 0); held = m;
+  prop.itemHit.position.copy(m.position); prop.itemGlow.position.copy(m.position); prop.itemGlow.position.y += .12; prop.itemGlow.visible = true;
+  prop.targetHit.position.set(...c.target.at); prop.targetGlow.position.set(...c.target.at); prop.targetGlow.visible = false;
+  prop.climaxHit.position.set(...c.climax.at); prop.climaxGlow.position.set(...c.climax.at); prop.climaxGlow.visible = false;
+  const tm = prop.trophy.children[0].material; tm.map = museum.pedestals[state.chapter].map.material.map; tm.color.set('#fff'); tm.needsUpdate = true; prop.trophy.position.set(ix, y + .74, iz); prop.trophyHit.position.copy(prop.trophy.position); prop.trophy.visible = false;
+  itemOn.label = c.item.label; targetOn.label = c.target.label; climaxOn.label = c.climax.label; trophyOn.label = CHAPTERS[state.chapter].trophy.name;
+}
 
 function go(event, payload) { const prev = state; state = advance(state, event, payload); if (event !== 'listen' && state !== prev) enter(state.stage); }
-function setWorld(w, x, z, faceX, faceZ) {
-  world = w; museum.group.visible = w === museum; siege.group.visible = w === siege; scene.fog = w.fog; scene.background = new THREE.Color(w.bg);
+function setWorld(w, x, z, faceX, faceZ, y = 0, b = w.bounds) {
+  world = w; bounds = b; floorY = y; for (const v of Object.values(worlds)) v.group.visible = v === w; scene.fog = w.fog; scene.background = new THREE.Color(w.bg);
   const yaw = Math.atan2(x - faceX, z - faceZ);
   if (renderer.xr.isPresenting) { // Başın odadaki konumu ve yönü hesaba katılır; oyuncu tam hedef noktaya, hedefe bakarak gelir.
     const local = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y; rig.rotation.y = yaw - local;
-    const off = new THREE.Vector3(camera.position.x, 0, camera.position.z).applyAxisAngle(UP, rig.rotation.y); rig.position.set(x - off.x, 0, z - off.z);
-  } else { rig.position.set(x, 0, z); rig.rotation.y = yaw; pitch = 0; camera.rotation.x = 0; }
+    const off = new THREE.Vector3(camera.position.x, 0, camera.position.z).applyAxisAngle(UP, rig.rotation.y); rig.position.set(x - off.x, y, z - off.z);
+  } else { rig.position.set(x, y, z); rig.rotation.y = yaw; pitch = 0; camera.rotation.x = 0; }
 }
-const hands = [];
-const setPersona = (v) => hands.forEach(h => h.userData.setPersona(v));
-function holdWad() { const h = hands.find(h => h.visible && h.parent) || hands[0]; h.add(siege.wad); siege.wad.position.set(0, .05, -.1); siege.wad.rotation.set(0, 0, 0); siege.wadGlow.visible = false; }
+const hands = [], dHands = [makeHand(), makeHand()];
+const allHands = () => [...hands, ...dHands];
+const setPersona = (v, color) => allHands().forEach(h => { h.userData.setPersona(v); if (color) h.userData.setSleeve(color); });
+function holdItem() { const h = renderer.xr.isPresenting ? (hands.find(x => x.parent?.visible) || hands[0]) : dHands[1]; h.add(held); held.position.set(0, .06, -.11); prop.itemGlow.visible = false; }
 
-async function openDoor() {
-  busy = true; const d = museum.door1453.userData; sound.chime(); d.motion = 1; say('Tablodaki kalabalık hareket etmeye başladı.', '1453', 3);
-  await wait(2); await fade(1, .7); go('doorIstanbul'); busy = false;
+async function openDoor(id) {
+  busy = true; const d = museum.doors[id].userData, ch = CHAPTERS[id]; sound.chime(); d.motion = 1; say('Tablodaki kalabalık hareket etmeye başladı.', ch.year, 3);
+  await wait(2); await fade(1, .7); busy = false; go('door', id);
 }
-async function memoryShift() {
-  busy = true; siege.helperGlow.visible = false; say('Gözlerin kararıyor. Birinin kalbi seninkinin yerine atıyor.', 'Hafıza Geçişi', 3); sound.heartbeat();
-  await wait(1.6); await fade(1, .9); go('touchSoldier'); await wait(1.1); await fade(0, 1.3); busy = false;
+async function memoryShift(id) {
+  busy = true; say('Gözlerin kararıyor. Birinin kalbi seninkinin yerine atıyor.', 'Hafıza Geçişi', 3); sound.heartbeat();
+  await wait(1.6); await fade(1, .9); go('touch', id); await wait(1.1); await fade(0, 1.3); busy = false;
 }
-async function replay() {
-  busy = true; await fade(.86, .5); sound.cannon(); const c = CHOICES[state.trophy.choice]; say(c ? c.memory : 'Topun gölgesinde geçen bir akşam.', 'Anı · Mayıs 1453', 4.5); await wait(4.5); await fade(0, .8); busy = false;
+async function replay(id) {
+  busy = true; await fade(.86, .5); sound.thud(52, 1.6, 1); const ch = CHAPTERS[id], pick = Object.entries(state.done[id] || {}).pop();
+  say(pick ? ch.characters[pick[0]].options[pick[1]].memory : ch.place, ch.trophy.title, 4.5); await wait(4.5); await fade(0, .8); busy = false;
 }
-function resetSiege() {
-  const s = siege; s.helper.visible = true; s.helperGlow.visible = true; s.wadGlow.visible = true; s.group.add(s.wad); s.wad.position.set(-5.2, .84, -4.2); s.wad.visible = true;
-  s.gunGlow.visible = false; s.linstock.visible = false; s.mapItem.visible = false; s.mapGlow.visible = false; heard.clear();
-}
+const showTraces = (cid) => { for (const k in traces) traces[k].forEach(t => { t.g.visible = k === cid; const d = !!state.done[cid]?.[t.id]; t.hl.visible = !d; t.plate.set(`${CHAPTERS[k].characters[t.id].label}${d ? ' ✓' : ''}`); }); };
 const heard = new Set();
+let token = 0;
 async function enter(stage) {
-  const s = siege;
+  const ch = CHAPTERS[state.chapter], c = currentCharacter(state), me = ++token;
   if (stage === 'traveller') {
-    resetSiege(); setPersona(false); setWorld(siege, 0, -19.5, 0, -45); sound.ambient('camp'); hands.forEach(h => h.visible = true);
-    await fade(0, 1.2); say('Mayıs 1453. Surların önündesin. Kimse seni göremiyor.', 'Zaman Yolcusu', 7); hint('Yakındaki askerleri dinle, sonra parlayan yardımcıya dokun.');
-    await wait(7); if (state.stage === 'traveller' && !busy) say('Askerlerin yanına git ve onları dinle. Hazır olunca ışıldayan topçu yardımcısına dokun.', 'Zaman Yolcusu', 8);
-  } else if (stage === 'wakeInCamp') {
-    s.helper.visible = false; setPersona(true); setWorld(siege, -6.6, -1.4, 3, -9); hint('Sandıktaki ahşap tapayı al.');
-    await wait(.8); say('Gözlerini açtın. Bu eller artık senin. Usta bağırıyor: “Tapayı getir!”', 'Topçu Yardımcısı', 8);
-  } else if (stage === 'carryWad') {
-    s.gunGlow.visible = true; hint('Tapayı büyük topun yanına götür.'); say('Önce barut, sonra tapa, sonra taş gülle. Tapayı topa götür.', 'Topçu Yardımcısı', 7);
+    const w = worlds[ch.world]; w.reset(); heard.clear(); prop.group.parent?.remove(prop.group); showTraces(state.chapter); setPersona(false, '#264a66');
+    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient('camp'); allHands().forEach(h => { h.visible = true; });
+    await fade(0, 1.2); say(ch.arrive.text, 'Zaman Yolcusu', 7); hint('Çevreyi dinle, sonra içine gireceğin hayatı seç.');
+    await wait(7); if (token === me) say('Işıldayan izlerden birine dokun. İstediğin zaman dönüp başka birini seçebilirsin.', 'Zaman Yolcusu', 8);
+  } else if (stage === 'wake') {
+    for (const t of traces[state.chapter]) t.g.visible = false;
+    worlds[c.world].reset(); setupProps(c); setPersona(true, c.sleeve); setWorld(worlds[c.world], ...c.spawn, ...c.face, c.floorY, c.bounds); hint(`${c.item.label}: al.`);
+    await wait(.8); if (token === me) say(c.wake, c.label, 8);
+  } else if (stage === 'carry') {
+    prop.targetGlow.visible = true; hint(`${c.target.label}.`); say(c.carry, c.label, 7);
   } else if (stage === 'choice') {
-    s.wad.visible = false; s.gunGlow.visible = false; hint('');
-    say('Yusuf elini yaktı ve seni çağırıyor. Usta da yanından ayrılmamanı istiyor.', 'Kararın', 60);
-    choiceUi.forEach(p => { p.visible = true; place(p, 1.7, -.72, p.userData.side); });
+    held.visible = false; prop.targetGlow.visible = false; hint(''); say(c.prompt, 'Kararın', 90);
+    Object.entries(c.options).forEach(([id, o], i) => { const p = choiceUi[i]; p.set(o.label); p.userData.id = id; p.userData.it.label = o.label; p.visible = true; place(p, 1.7, -.72, p.userData.side); });
   } else if (stage === 'outcome') {
-    choiceUi.forEach(p => { p.visible = false; }); say(CHOICES[state.choice].result, 'Sonuç', 6); await wait(6); go('outcomeDone');
-  } else if (stage === 'cannon') {
-    s.linstock.visible = true; say('Top yüklendi. Usta sana başıyla işaret ediyor.', 'Topçu Yardımcısı', 7); hint('Fitili ateşe değdir.');
+    choiceUi.forEach(p => { p.visible = false; }); say(c.options[state.choice].result, 'Sonuç', 6); await wait(6); if (token === me) go('outcomeDone');
+  } else if (stage === 'climax') {
+    prop.climaxGlow.visible = true; say(c.climax.text, c.label, 8); hint(`${c.climax.label}.`);
   } else if (stage === 'aftermath') {
-    busy = true; hint(''); fire(); await wait(3.5);
-    say('Bu top bir günde ancak yedi kez ateşlenebiliyordu. Kuşatma 29 Mayıs 1453’te sona erecek. Senin kararın bunu değiştirmedi; yalnızca Yusuf’la hikâyeni değiştirdi.', 'Tarih', 9);
-    await wait(9); s.mapItem.visible = true; s.mapGlow.visible = true; say('Sandığın üstünde eski bir harita kopyası duruyor.', 'Topçu Yardımcısı', 6); busy = false; hint('Haritayı al.');
+    busy = true; hint(''); prop.climaxGlow.visible = false; worlds[c.world].climax(sound); pulse(1, 260); await wait(3.5);
+    say(c.history, 'Tarih', 9); await wait(9); prop.trophy.visible = true; prop.itemGlow.visible = true; prop.itemGlow.position.copy(prop.trophy.position); say(`${ch.trophy.name} burada duruyor.`, c.label, 6); busy = false; hint('Nesneyi al.');
+  } else if (stage === 'finale') {
+    busy = true; prop.group.parent?.remove(prop.group); await fade(1, 1); setPersona(false, '#264a66'); setWorld(worlds[ch.world], ...ch.arrive.at, ...ch.arrive.face); await fade(0, 1.2);
+    say('Aynı an. Üç hayat.', 'Ortak Final', 4); await wait(4);
+    for (const [id, o] of Object.entries(state.done[state.chapter])) { say(ch.characters[id].options[o].finale, ch.characters[id].label, 5); await wait(5); }
+    say(ch.closing, 'Tarih', 9); await wait(9); busy = false; go('finish');
   } else if (stage === 'museum') {
-    busy = true; hint(''); await fade(1, 1); setPersona(false); hands.forEach(h => h.visible = false); setWorld(museum, 3, 4.2, 3, 1); sound.ambient('museum'); museum.door1453.userData.motion = 0;
-    if (state.trophy) { save({ ...load(), trophy: state.trophy }); showTrophy(); }
-    await fade(0, 1); say('Harita artık müzede. Ona dokunursan o anı yeniden canlanır.', 'Saat 00.24', 7); busy = false;
+    busy = true; hint(''); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
+    setWorld(museum, 3, ch && state.chapter === 'paris' ? -.6 : 4.2, 3, ch && state.chapter === 'paris' ? -3.4 : 1); sound.ambient('museum');
+    for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy);
+    await fade(0, 1); say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
   }
 }
-function showTrophy() { museum.map.visible = true; museum.pedGlow.visible = true; }
-if (state.trophy) showTrophy();
-
-function fire() {
-  const s = siege; sound.cannon(); s.flash.visible = true; flashT = .18; s.smoke.forEach((p, i) => { const wall = i > 5; p.position.copy(wall ? new THREE.Vector3(3 + i * .5, 7, -39.6) : s.muzzle); p.userData = { v: wall ? .9 : 2 + i * .3, age: wall ? -1.3 : 0, wall, dx: (i - 5) * .22 }; p.material.opacity = 0; p.scale.setScalar(wall ? 3 : 1.6); });
-  pulse(1, 260);
-}
-let flashT = 0;
 
 // Girdi
 const ray = new THREE.Raycaster(), tmpM = new THREE.Matrix4(), controllers = [], hover = new Panel(.9, .19, { size: 76 }); hover.visible = false; scene.add(hover);
 function pick(origin, dir) {
-  ray.set(origin, dir); ray.far = 16; let best = null;
+  ray.set(origin, dir); ray.far = 60; let best = null;
   for (const it of items) { if (!it.active() || !it.hit.visible) continue; if (it.hit.parent && !visibleChain(it.hit)) continue; const h = ray.intersectObject(it.hit, false)[0]; if (h && (!best || h.distance < best.d)) best = { it, d: h.distance, point: h.point }; }
   return best;
 }
@@ -132,7 +166,7 @@ const marker = new THREE.Mesh(new THREE.RingGeometry(.25, .33, 24), new THREE.Me
 const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]);
 for (let i = 0; i < 2; i++) {
   const c = renderer.xr.getController(i), grip = renderer.xr.getControllerGrip(i), line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: '#ffe6b0' })), h = makeHand();
-  h.visible = false; grip.add(h); hands.push(h); c.add(line); rig.add(c, grip);
+  grip.add(h); hands.push(h); c.add(line); rig.add(c, grip);
   const st = { c, line, source: null, hover: null, aiming: false, turned: false, hitD: 3 };
   c.addEventListener('connected', e => { st.source = e.data; line.visible = e.data.targetRayMode !== 'gaze'; });
   c.addEventListener('disconnected', () => { st.source = null; });
@@ -140,15 +174,15 @@ for (let i = 0; i < 2; i++) {
   controllers.push(st);
 }
 // Masaüstü elleri
-const dHands = [makeHand(), makeHand()]; dHands.forEach((h, i) => { h.position.set(i ? .22 : -.22, -.3, -.42); h.rotation.set(.55, i ? .3 : -.3, 0); h.visible = false; camera.add(h); });
-const O = new THREE.Vector3(), D = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+dHands.forEach((h, i) => { h.position.set(i ? .22 : -.22, -.3, -.42); h.rotation.set(.55, i ? .3 : -.3, 0); h.visible = false; camera.add(h); });
+const O = new THREE.Vector3(), D = new THREE.Vector3();
 const keys = {}; let pitch = 0, deskHover = null;
 addEventListener('keydown', e => { keys[e.code] = true; }); addEventListener('keyup', e => { keys[e.code] = false; });
 renderer.domElement.addEventListener('click', () => { if (renderer.xr.isPresenting) return; if (deskHover) deskHover.it.fn(); else if (document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
 addEventListener('mousemove', e => { if (document.pointerLockElement !== renderer.domElement) return; rig.rotation.y -= e.movementX * .0022; pitch = THREE.MathUtils.clamp(pitch - e.movementY * .0022, -1.2, 1.2); camera.rotation.x = pitch; });
 addEventListener('resize', () => { if (renderer.xr.isPresenting) return; camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
-function clampRig() { const b = world.bounds; rig.position.x = THREE.MathUtils.clamp(rig.position.x, b.x[0], b.x[1]); rig.position.z = THREE.MathUtils.clamp(rig.position.z, b.z[0], b.z[1]); }
+function clampRig() { const b = bounds; rig.position.x = THREE.MathUtils.clamp(rig.position.x, b.x[0], b.x[1]); rig.position.z = THREE.MathUtils.clamp(rig.position.z, b.z[0], b.z[1]); }
 function moveXZ(dx, dz, dt, speed) { D.set(dx, 0, dz); if (D.lengthSq() < .01) return; D.applyAxisAngle(UP, rigYaw()); rig.position.addScaledVector(D, speed * dt); clampRig(); }
 function rigYaw() { if (!renderer.xr.isPresenting) return rig.rotation.y; head(); return Math.atan2(-headDir.x, -headDir.z); }
 function xrInput(dt) {
@@ -161,7 +195,7 @@ function xrInput(dt) {
     const g = st.source.gamepad; if (!g) continue; const ax = g.axes, x = ax[2] ?? 0, y = ax[3] ?? 0, isLeft = st.source.handedness === 'left';
     if (isLeft && mode === 'akici') moveXZ(x, y, dt, 2.1);
     else if (mode === 'isinlanma') {
-      if (y < -.6) { st.aiming = true; const t = -O.y / Math.min(D.y, -.04), d = Math.min(t, 9); marker.position.set(O.x + D.x * d, .02, O.z + D.z * d); const b = world.bounds; marker.position.x = THREE.MathUtils.clamp(marker.position.x, b.x[0], b.x[1]); marker.position.z = THREE.MathUtils.clamp(marker.position.z, b.z[0], b.z[1]); marker.visible = true; }
+      if (y < -.6) { st.aiming = true; const t = (floorY - O.y) / Math.min(D.y, -.04), d = Math.min(t, 9); marker.position.set(O.x + D.x * d, floorY + .02, O.z + D.z * d); const b = bounds; marker.position.x = THREE.MathUtils.clamp(marker.position.x, b.x[0], b.x[1]); marker.position.z = THREE.MathUtils.clamp(marker.position.z, b.z[0], b.z[1]); marker.visible = true; }
       else if (st.aiming) { st.aiming = false; head(); rig.position.x += marker.position.x - headPos.x; rig.position.z += marker.position.z - headPos.z; }
     }
     if (!isLeft) { if (Math.abs(x) > .7 && !st.turned) { st.turned = true; head(); const a = x > 0 ? -Math.PI / 6 : Math.PI / 6, dx = rig.position.x - headPos.x, dz = rig.position.z - headPos.z, c = Math.cos(a), s = Math.sin(a); rig.rotation.y += a; rig.position.x = headPos.x + dx * c + dz * s; rig.position.z = headPos.z - dx * s + dz * c; } if (Math.abs(x) < .3) st.turned = false; }
@@ -170,7 +204,7 @@ function xrInput(dt) {
 }
 function deskInput(dt) {
   moveXZ((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0), dt, 3.2);
-  camera.getWorldPosition(O); camera.getWorldDirection(D); deskHover = pick(O, D); dHands.forEach(h => { h.visible = world === siege; h.userData.setPersona(state.stage !== 'traveller'); });
+  camera.getWorldPosition(O); camera.getWorldDirection(D); deskHover = pick(O, D); 
   $('arti').style.display = 'block'; $('arti').style.background = deskHover ? '#d9a845' : 'none'; if (deskHover && !sub.visible) $('hud').textContent = deskHover.it.label;
 }
 function animate(dt) {
@@ -178,29 +212,26 @@ function animate(dt) {
   if (fadeJob) { const j = fadeJob; j.t = Math.min(j.s, j.t + dt); veil.material.opacity = j.from + (j.to - j.from) * (j.t / j.s); veil.visible = veil.material.opacity > .005; if (j.t >= j.s) { fadeJob = null; j.res(); } }
   for (let i = timers.length - 1; i >= 0; i--) if ((timers[i].t -= dt) <= 0) timers.splice(i, 1)[0].r();
   if (subT > 0 && (subT -= dt) <= 0) sub.visible = false;
-  for (const d of [museum.door1453]) { const u = d.userData; if (u.motion) { u.t = (u.t || 0) + dt; u.painting.render(u.t, 1); } }
   head();
   if (world === museum) {
-    museum.door1453.userData.glow.material.opacity = .45 + Math.sin(time * 1.6) * .12; museum.door1789.userData.glow.material.opacity = .16;
+    for (const d of Object.values(museum.doors)) { const u = d.userData; u.glow.material.opacity = .4 + Math.sin(time * 1.6) * .12; if (u.motion) { u.t = (u.t || 0) + dt; u.painting.render(u.t, 1); } }
     const h = museum.statue.userData.head, s = museum.statue, dx = headPos.x - s.position.x, dz = headPos.z - s.position.z, d = Math.hypot(dx, dz);
     if (d < 7) { const tgt = THREE.MathUtils.clamp(Math.atan2(dx, dz) - s.rotation.y, -1, 1); h.rotation.y += (tgt - h.rotation.y) * Math.min(1, dt * 2.5); }
-    if (d < 5.2 && !statueSpoke && state.stage === 'museum' && !state.trophy) { statueSpoke = true; say('Tarihi bildiğini sanıyorsun. Peki, onu yaşayanların ne hissettiğini biliyor musun?', 'Heykel', 9); }
+    if (d < 5.2 && !statueSpoke && !busy) { statueSpoke = true; say('Tarihi bildiğini sanıyorsun. Peki, onu yaşayanların ne hissettiğini biliyor musun?', 'Heykel', 9); }
   } else {
-    const s = siege; s.fires.forEach((f, i) => { f.scale.setScalar(2.2 + Math.sin(time * 9 + i * 2) * .3); }); s.fireLight.intensity = 42 + Math.sin(time * 11) * 7;
-    s.helperGlow.material.opacity = .4 + Math.sin(time * 3) * .2; s.wadGlow.material.opacity = .7 + Math.sin(time * 4) * .3;
-    for (const f of s.people) f.userData.head.rotation.y = Math.sin(time * .7 + f.userData.phase) * .35;
-    if (flashT > 0 && (flashT -= dt) <= 0) s.flash.visible = false;
-    for (const p of s.smoke) { const u = p.userData; if (u.v === undefined) continue; u.age += dt; if (u.age < 0) continue; const o = Math.max(0, .6 - u.age * .11); p.material.opacity = o; p.position.y += u.v * dt * (u.wall ? .9 : .5); p.position.z -= u.wall ? 0 : u.v * dt * .9; p.position.x += u.dx * dt; p.scale.setScalar((u.wall ? 3 : 1.6) + u.age * 1.2); }
-    if (state.stage === 'traveller') s.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z; if (dx * dx + dz * dz < 14 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(LINES[i][0], LINES[i][1], 8); } });
+    world.tick(dt, time); prop.itemGlow.material.opacity = .7 + Math.sin(time * 4) * .3;
+    if (state.stage === 'traveller') {
+      traces[state.chapter].forEach(t => { t.hl.material.opacity = .32 + Math.sin(time * 3) * .15; t.plate.lookAt(headPos); });
+      world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); } });
+    }
   }
   hover.visible = false;
   if (renderer.xr.isPresenting) xrInput(dt); else deskInput(dt);
 }
 let statueSpoke = false;
-const LINES = [['“Duvarın dibine kadar yürüsek de geri dönen olur mu?” diye fısıldıyor biri.', 'Asker'], ['“Yedi kez ateş edecek, sonra soğumasını bekleyeceğiz.”', 'Topçu']];
 
-const clock = new THREE.Clock();
-renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .1); animate(dt); renderer.render(scene, camera); });
+const clock = new THREE.Clock(), SPEED = TEST ? +(new URLSearchParams(location.search).get('hiz') || 1) : 1;
+renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .1) * SPEED; animate(dt); renderer.render(scene, camera); });
 
 async function begin(xr) {
   sound.start(); sound.ambient('museum'); $('giris').hidden = true;
@@ -217,4 +248,4 @@ $('vr').onclick = () => begin(true).catch(e => { $('giris').hidden = false; $('b
 navigator.xr?.isSessionSupported('immersive-vr').then(ok => { $('vr').disabled = !ok; if (!ok) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.'; }).catch(() => {});
 if (!navigator.xr) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.';
 
-if (TEST) window.__muze = { get state() { return state; }, get world() { return world === museum ? 'museum' : '1453'; }, get mode() { return mode; }, get busy() { return busy; }, get said() { return lastSay; }, items, rig, camera, renderer, siege, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };
+if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, get said() { return lastSay; }, items, rig, camera, renderer, prop, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };
