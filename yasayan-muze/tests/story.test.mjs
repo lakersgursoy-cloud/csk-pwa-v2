@@ -44,15 +44,14 @@ test('müzeye dönüp yeni karakter seçilebilir, önceki seçim kalır', () => 
   const s = run(initialState(), [['door', 'istanbul'], ...life('topcu', 'usta'), ['door', 'istanbul']]);
   assert.equal(s.stage, 'traveller'); assert.equal(s.done.istanbul.topcu, 'usta');
 });
-test('Fatih sahnesi yalnızca İstanbul’da açılır, seçim ve kayıt değiştirmez', () => {
-  let s = run(initialState(), [['door', 'paris'], ['watch']]); assert.equal(s.stage, 'traveller');
+test('İzleme sahneleri iki dönemde de açılır, seçim ve kayıt değiştirmez', () => {
+  let s = run(initialState(), [['door', 'paris'], ['watch']]); assert.equal(s.stage, 'spectacle');
   s = run(initialState(), [['door', 'istanbul'], ['watch']]); assert.equal(s.stage, 'spectacle');
   assert.equal(advance(s, 'touch', 'topcu').stage, 'spectacle');
   s = advance(s, 'watchDone'); assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {});
 });
-test('Fatih sahnesi metinleri zaman sırasındadır ve kurgu sözü içermez', () => {
-  const b = CHAPTERS.istanbul.spectacle.beats; assert.ok(b.length >= 6);
-  b.forEach((x, i) => { if (i) assert.ok(x.t > b[i - 1].t); assert.ok(!/[“”"]/.test(x.text)); });
+test('İzleme sahnesi metinleri zaman sırasındadır ve kurgu sözü içermez', () => {
+  for (const c of ['istanbul', 'paris']) { const b = CHAPTERS[c].spectacle.beats; assert.ok(b.length >= 6); b.forEach((x, i) => { if (i) assert.ok(x.t > b[i - 1].t); assert.ok(!/[“”"]/.test(x.text)); }); }
 });
 test('Yeniçeri bölümü yalnızca İstanbul’da açılır ve kayıt değiştirmez', () => {
   let s = run(initialState(), [['door', 'paris'], ['climb']]); assert.equal(s.stage, 'traveller');

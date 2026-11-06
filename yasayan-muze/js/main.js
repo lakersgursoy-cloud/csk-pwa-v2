@@ -72,14 +72,14 @@ for (const [cid, ch] of Object.entries(CHAPTERS)) {
   });
 }
 // 1453 kapısındaki iki özel giriş: Fatih'in Gözünden ve Son Dalga.
-function specialTrace(label, actorOpts, x, ry, event) {
-  const f = { g: new THREE.Group(), act: makeActor(actorOpts), hl: glow(2.8, '255,210,130'), plate: new Panel(1.7, .26, { size: 62 }).set(label) }, hit = new THREE.Mesh(new THREE.SphereGeometry(.95, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
-  f.g.position.set(x, 0, -20.4); f.act.root.rotation.y = ry; f.hl.position.y = 1.05; f.plate.position.y = 2.2; hit.position.y = 1; f.g.add(f.act.root, f.hl, f.plate, hit); f.g.visible = false; worlds.siege.group.add(f.g); worlds.siege.actors.push(f.act);
-  on(hit, label, async () => { busy = true; sound.heartbeat(); await fade(1, 1.2); busy = false; go(event); }, () => state.stage === 'traveller' && state.chapter === 'istanbul' && !busy);
+function specialTrace(chapter, label, actorOpts, x, z, ry, event) {
+  const wg = worlds[CHAPTERS[chapter].world], f = { chapter, g: new THREE.Group(), act: makeActor(actorOpts), hl: glow(2.8, '255,210,130'), plate: new Panel(1.7, .26, { size: 62 }).set(label) }, hit = new THREE.Mesh(new THREE.SphereGeometry(.95, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+  f.g.position.set(x, 0, z); f.act.root.rotation.y = ry; f.hl.position.y = 1.05; f.plate.position.y = 2.2; hit.position.y = 1; f.g.add(f.act.root, f.hl, f.plate, hit); f.g.visible = false; wg.group.add(f.g); wg.actors.push(f.act);
+  on(hit, label, async () => { busy = true; sound.heartbeat(); await fade(1, 1.2); busy = false; go(event); }, () => state.stage === 'traveller' && state.chapter === chapter && !busy);
   return f;
 }
-const specials = [specialTrace(CHAPTERS.istanbul.spectacle.label, { model: 'king', robe: '#7a1f1f', cap: '#ece6d6', hat: 'turban', hair: '#3a2a1e' }, 6.5, -1.3, 'watch'), specialTrace(CHAPTERS.istanbul.assault.label, { robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork' }, -6.5, 1.3, 'climb')];
-const showSpecials = (v) => specials.forEach(f => { f.g.visible = v; });
+const specials = [...Object.entries(CHAPTERS).map(([id, c]) => specialTrace(id, c.spectacle.label, c.spectacle.actor, ...c.spectacle.traceAt, c.spectacle.traceRy, 'watch')), specialTrace('istanbul', CHAPTERS.istanbul.assault.label, { robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork' }, -6.5, -20.4, 1.3, 'climb')];
+const showSpecials = (cid) => specials.forEach(f => { f.g.visible = f.chapter === cid; });
 // Tırmanış adımları tek bir hedefle ilerler.
 const climbGlow = glow(.42, '255,215,130'), climbHit = new THREE.Mesh(new THREE.SphereGeometry(.42, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); climbGlow.visible = climbHit.visible = false; worlds.siege.group.add(climbGlow, climbHit);
 const climb = { step: 0, it: null };
@@ -142,7 +142,7 @@ async function replay(id) {
   busy = true; await fade(.86, .5); sound.thud(52, 1.6, 1); const ch = CHAPTERS[id], pick = Object.entries(state.done[id] || {}).pop();
   say(pick ? ch.characters[pick[0]].options[pick[1]].memory : ch.place, ch.trophy.title, 4.5); await wait(4.5); await fade(0, .8); busy = false;
 }
-const showTraces = (cid) => { showSpecials(cid === 'istanbul'); for (const k in traces) traces[k].forEach(t => { t.g.visible = k === cid; const d = !!state.done[cid]?.[t.id]; t.hl.visible = !d; t.plate.set(`${CHAPTERS[k].characters[t.id].label}${d ? ' ✓' : ''}`); }); };
+const showTraces = (cid) => { showSpecials(cid); for (const k in traces) traces[k].forEach(t => { t.g.visible = k === cid; const d = !!state.done[cid]?.[t.id]; t.hl.visible = !d; t.plate.set(`${CHAPTERS[k].characters[t.id].label}${d ? ' ✓' : ''}`); }); };
 const heard = new Set();
 let endNote = '';
 function nextClimb(a) {
@@ -167,12 +167,12 @@ async function enter(stage) {
     const w = worlds.siege, a = ch.assault; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog, 64); setPersona(true, '#d8d0bc'); climb.step = 0; setWorld(w, 3, -32.6, 3, -60, 0, { x: [1, 5], z: [-34, -31] }); sound.ambient('camp');
     await fade(0, 1.6); nextClimb(a);
   } else if (stage === 'spectacle') {
-    const w = worlds.siege, sp = ch.spectacle; busy = true; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog); setPersona(true, '#7a1f1f'); setWorld(w, 0, 6.2, 0, -41, 9, { x: [-5, 5], z: [5.6, 15] }); sound.ambient('camp');
+    const w = worlds[ch.world], sp = ch.spectacle; busy = true; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog); setPersona(!!sp.sleeve, sp.sleeve || '#264a66'); setWorld(w, ...sp.at, ...sp.face, sp.y, sp.bounds); sound.ambient(ch.world === 'paris' ? 'crowd' : 'camp');
     await fade(0, 2); let at = 0;
     for (const b of sp.beats) { await wait(b.t - at); at = b.t; say(b.text, sp.title, 9); }
-    await wait(12); await fade(1, 2); w.spect.stop(); busy = false; endNote = 'Tarihi tepeden gördün. Şimdi aynı geceyi orada yaşayanların gözünden görebilirsin.'; go('watchDone');
+    await wait(12); await fade(1, 2); w.spect.stop(); busy = false; endNote = sp.end; go('watchDone');
   } else if (stage === 'wake') {
-    showSpecials(false); for (const t of traces[state.chapter]) t.g.visible = false;
+    showSpecials(null); for (const t of traces[state.chapter]) t.g.visible = false;
     worlds[c.world].reset(); setupProps(c); setPersona(true, c.sleeve); setWorld(worlds[c.world], ...c.spawn, ...c.face, c.floorY, c.bounds); hint(`${c.item.label}: al.`);
     await wait(.8); if (token === me) say(c.wake, c.label, 8);
   } else if (stage === 'carry') {
@@ -286,7 +286,7 @@ let statueSpoke = false;
 
 // Otomatik kalite: VR'da kare süresi uzarsa kalabalık ve yürüyen karakterler azalır.
 const perf = { t: 0, n: 0, level: 0 }, LEVELS = [1, .6, .35, .2];
-function applyQuality() { worlds.siege.spect.setDensity(LEVELS[perf.level]); if (perf.level >= 1) for (const w of Object.values(worlds)) w.actors?.forEach(a => { if (a.path) a.root.visible = false; }); }
+function applyQuality() { worlds.siege.spect.setDensity(LEVELS[perf.level]); worlds.paris.spect.setDensity(LEVELS[perf.level]); if (perf.level >= 1) for (const w of Object.values(worlds)) w.actors?.forEach(a => { if (a.path) a.root.visible = false; }); }
 function watchPerf(raw) { if (!renderer.xr.isPresenting || fadeJob) { perf.t = perf.n = 0; return; } perf.t += raw; perf.n++; if (perf.t < 2.5) return; const avg = perf.t / perf.n; perf.t = perf.n = 0; if (avg > 1 / 58 && perf.level < LEVELS.length - 1) { perf.level++; applyQuality(); } }
 const clock = new THREE.Clock(), SPEED = TEST ? +(new URLSearchParams(location.search).get('hiz') || 1) : 1;
 renderer.setAnimationLoop(() => { const raw = clock.getDelta(); watchPerf(raw); const dt = Math.min(raw, .1) * SPEED; animate(dt); renderer.render(scene, camera); });

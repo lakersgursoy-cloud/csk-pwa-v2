@@ -20,7 +20,8 @@ export const CHAPTERS = {
     },
     // Gerçek olayların kısaltılmış anlatımı. Fatih'e söz yazılmaz; oyuncu izler.
     spectacle: {
-      label: 'Fatih’in Gözünden', title: '29 Mayıs 1453',
+      label: 'Fatih’in Gözünden', title: '29 Mayıs 1453', at: [0, 6.2], face: [0, -41], y: 9, bounds: { x: [-5, 5], z: [5.6, 15] }, sleeve: '#7a1f1f', traceAt: [6.5, -20.4], traceRy: -1.3,
+      actor: { model: 'king', robe: '#7a1f1f', cap: '#ece6d6', hat: 'turban', hair: '#3a2a1e' }, end: 'Tarihi tepeden gördün. Şimdi aynı geceyi orada yaşayanların gözünden görebilirsin.',
       beats: [
         { t: 0, text: 'Son saldırı gece yarısından sonra başlıyor. Otağının önündesin, ordu surların karşısında bekliyor.' },
         { t: 11, text: 'İlk dalga başıbozuklar. Merdivenleri surlara dayıyorlar.' },
@@ -84,6 +85,19 @@ export const CHAPTERS = {
     traces: [[-4, -2], [0, -3], [4, -2]],
     lines: [['“Invalides’ten tüfekleri aldık ama barut yok!”', 'Kalabalık'], ['“Ekmek bu kadar pahalıyken kim evde oturabilir?”', 'Kadın']],
     trophy: { name: 'Devrim bildirisi', item: 'paper', title: 'Anı · 14 Temmuz 1789' },
+    spectacle: {
+      label: 'Bastille’in Düşüşü', title: '14 Temmuz 1789', at: [0, -5], face: [0, -44], y: 6, bounds: { x: [-3, 3], z: [-6.4, -3.6] }, sleeve: null, traceAt: [6.5, .6], traceRy: -1.3,
+      actor: { robe: '#7a5a3a', hat: 'none' }, end: 'Kalabalığın üstünden gördün. Şimdi aynı günü orada yaşayanların gözünden görebilirsin.',
+      beats: [
+        { t: 0, text: 'Sabah kalabalık Invalides’ten tüfekleri aldı. Şimdi barut için Bastille önünde bekliyor.' },
+        { t: 13, text: 'Öğleden sonra ilk ateş açılıyor. Kale kalabalığa karşılık veriyor.' },
+        { t: 31, text: 'Saat üçü geçiyor. Fransız Muhafızlarının bir bölümü iki topla kalabalığa katılıyor.' },
+        { t: 50, text: 'Toplar kaleye çevrildi. Kale artık kuşatma altında.' },
+        { t: 66, text: 'Saat 17.00. Ateş kesiliyor. Vali de Launay teslim olmayı kabul ediyor.' },
+        { t: 75, text: 'Köprü iniyor. Kalabalık kaleye akıyor.' },
+        { t: 94, text: 'Saat 17.30’da kale ele geçirildi. İçeride yalnızca yedi mahkûm vardı, ama bu gün devrimin simgesi oldu.' },
+      ],
+    },
     closing: 'Saat 17.00’de ateş kesildi, 17.30’da kale ele geçirildi. İçeride yedi mahkûm vardı. Üç hayat, aynı öğleden sonra.',
     characters: {
       matbaaci: {
