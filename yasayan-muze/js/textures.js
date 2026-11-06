@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+const mix = (a, b, t) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16), ch = (s) => Math.round(((A >> s) & 255) * (1 - t) + ((B >> s) & 255) * t); return `rgb(${ch(16)},${ch(8)},${ch(0)})`; };
 const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
 function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
 function tex(c, rx = 1, ry = 1) {
@@ -237,3 +238,33 @@ export function grafWall() { const [c, g] = canvas(512, 256); g.fillStyle = '#9a
 export function concrete(rx, ry) { const [c, g] = canvas(256, 128); g.fillStyle = '#8a877e'; g.fillRect(0, 0, 256, 128); speckle(g, 256, 128, 3000, .12); for (let x = 0; x < 256; x += 42) { g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(x, 0, 2, 128); } return tex(c, rx, ry); }
 export const paleSky = () => paintSky([[0, '#5f9ccc'], [.4, '#bedcec'], [.495, '#f0ece0'], [.51, '#a6b0b4'], [1, '#6a7074']], '255,255,255', null);
 export const greySky = () => paintSky([[0, '#4a4a4c'], [.42, '#7a7672'], [.5, '#8f8678'], [.53, '#5a544e'], [1, '#3a3632']], '60,56,52', null);
+
+// Döneme özgü cepheler: pencere, kapı ve kat çizgileri dokuda; her doku bir cephe karesini kaplar.
+export function facadeAnkara(seed) {
+  const [c, g] = canvas(512, 512); g.fillStyle = ['#b89c78', '#a8906e', '#c4a884'][seed % 3]; g.fillRect(0, 0, 512, 512); speckle(g, 512, 512, 7000, .08);
+  const grime = g.createLinearGradient(0, 380, 0, 512); grime.addColorStop(0, 'rgba(40,30,20,0)'); grime.addColorStop(1, 'rgba(40,30,20,.4)'); g.fillStyle = grime; g.fillRect(0, 380, 512, 132);
+  g.fillStyle = '#4a3222'; g.fillRect(0, 236, 512, 10); g.fillRect(0, 0, 512, 6); for (let x = 30; x < 512; x += 60) { g.fillStyle = 'rgba(60,40,24,.5)'; g.fillRect(x, 226, 10, 10); }
+  const win = (x, y, w, h) => { g.fillStyle = '#5a4030'; g.fillRect(x - 8, y - 8, w + 16, h + 16); g.fillStyle = '#1a1a22'; g.fillRect(x, y, w, h); g.fillStyle = '#9a8a6a'; g.fillRect(x + w / 2 - 2, y, 4, h); g.fillRect(x, y + h / 2 - 2, w, 4); for (let k = 0; k < 4; k++) g.fillRect(x + 6 + k * (w - 12) / 3, y, 2, h); g.fillStyle = '#6a4a30'; g.fillRect(x - 8, y + h + 8, w + 16, 6); };
+  for (const x of [60, 220, 380]) win(x, 60, 72, 120);
+  for (const x of [60, 380]) win(x, 300, 72, 120);
+  g.fillStyle = '#4a3222'; g.fillRect(205, 290, 102, 222); g.fillStyle = '#6a4a2c'; g.fillRect(213, 298, 86, 214); g.fillStyle = '#3a2618'; for (let y = 310; y < 500; y += 40) g.fillRect(213, y, 86, 4); g.fillStyle = '#b89a50'; g.beginPath(); g.arc(290, 410, 4, 0, 7); g.fill();
+  return tex(c);
+}
+export function facadeBerlin(seed) {
+  const [c, g] = canvas(512, 768); const base = ['#a39a8c', '#8f8880', '#b6ad9e'][seed % 3]; g.fillStyle = base; g.fillRect(0, 0, 512, 768); speckle(g, 512, 768, 9000, .07);
+  for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(40,36,30,${rnd() * .12})`; g.beginPath(); g.ellipse(rnd() * 512, rnd() * 768, 30 + rnd() * 60, 10 + rnd() * 60, 0, 0, 7); g.fill(); }
+  g.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 0; y < 768; y += 192) g.fillRect(0, y, 512, 6);
+  g.fillStyle = '#6a6460'; g.fillRect(0, 640, 512, 128); g.fillStyle = 'rgba(0,0,0,.3)'; for (let x = 0; x < 512; x += 48) g.fillRect(x, 640, 2, 128);
+  const win = (x, y, w, h) => { g.fillStyle = mix(base, '#000', .25); g.fillRect(x - 6, y - 6, w + 12, h + 12); g.fillStyle = seed % 2 ? '#2a2e3a' : '#ffd080'; g.globalAlpha = seed % 2 ? 1 : .35 + rnd() * .6; g.fillRect(x, y, w, h); g.globalAlpha = 1; g.fillStyle = '#d8d0c0'; g.fillRect(x + w / 2 - 2, y, 4, h); g.fillRect(x, y + h * .35, w, 4); };
+  for (let r = 0; r < 3; r++) for (const x of [52, 180, 308, 436]) win(x, 36 + r * 192, 46, 110);
+  g.fillStyle = '#2a2622'; g.fillRect(212, 660, 88, 108); g.fillStyle = '#4a4440'; g.fillRect(220, 668, 72, 100);
+  return tex(c);
+}
+export function facadeHiroshima(seed) {
+  const [c, g] = canvas(512, 512); g.fillStyle = ['#a99a84', '#b8ab96', '#9d8f7a'][seed % 3]; g.fillRect(0, 0, 512, 512); speckle(g, 512, 512, 6000, .07);
+  const wood = '#4a3a2c'; g.fillStyle = wood; g.fillRect(0, 0, 512, 8); g.fillRect(0, 250, 512, 8); g.fillRect(0, 504, 512, 8); for (const x of [0, 168, 336, 504]) g.fillRect(x, 0, 8, 512);
+  const shoji = (x, y, w, h) => { g.fillStyle = '#e8e0cc'; g.fillRect(x, y, w, h); g.fillStyle = wood; for (let k = 0; k <= 4; k++) g.fillRect(x + k * w / 4 - 1, y, 3, h); for (let k = 0; k <= 3; k++) g.fillRect(x, y + k * h / 3 - 1, w, 3); };
+  for (const x of [24, 192, 360]) shoji(x, 40, 120, 150);
+  shoji(24, 300, 120, 150); shoji(360, 300, 120, 150); g.fillStyle = wood; g.fillRect(192, 290, 128, 222); g.fillStyle = '#6a5a44'; g.fillRect(200, 298, 54, 214); g.fillRect(258, 298, 54, 214);
+  return tex(c);
+}
