@@ -87,17 +87,17 @@ export function soft(color = '255,190,110') {
 // Tablodaki kalabalık: kapı açılırken kişiler hareket eder.
 export class CrowdPainting {
   constructor(draw, n) {
-    [this.c, this.g] = canvas(512, 768); const [b, bg] = canvas(512, 768); draw(bg); painterly(b, 9000, 22); this.draw = (g) => g.drawImage(b, 0, 0);
-    this.t = new THREE.CanvasTexture(this.c); this.t.colorSpace = THREE.SRGBColorSpace;
-    this.p = Array.from({ length: n }, () => ({ x: rnd() * 512, y: 540 + rnd() * 210, c: ['#2a1b12', '#5b2a20', '#1f2a3a', '#c9b48a'][rnd() * 4 | 0], s: 7 + rnd() * 6, ph: rnd() * 7 }));
+    const b = draw, w = b.width, h = b.height; [this.c, this.g] = canvas(w, h); this.w = w; this.draw = (g) => g.drawImage(b, 0, 0);
+    this.t = new THREE.CanvasTexture(this.c); this.t.colorSpace = THREE.SRGBColorSpace; this.t.anisotropy = 8;
+    this.p = Array.from({ length: n }, () => ({ x: rnd() * w, y: h * .72 + rnd() * h * .24, c: ['#2a1b12', '#5b2a20', '#1f2a3a', '#c9b48a'][rnd() * 4 | 0], s: (7 + rnd() * 6) * w / 512, ph: rnd() * 7 }));
     this.render(0, 0);
   }
   render(time, motion) {
     const { g } = this; this.draw(g);
     for (const p of this.p) {
-      const x = p.x + Math.sin(time * 3 + p.ph) * 9 * motion - time * motion * 18, y = p.y + Math.abs(Math.sin(time * 6 + p.ph)) * -5 * motion;
-      g.fillStyle = p.c; g.fillRect(((x % 512) + 512) % 512, y, p.s, p.s * 2.6);
-      g.beginPath(); g.arc(((x % 512) + 512) % 512 + p.s / 2, y - 3, p.s * .46, 0, 7); g.fill();
+      const w = this.w, x = p.x + Math.sin(time * 3 + p.ph) * 9 * motion - time * motion * 18, y = p.y + Math.abs(Math.sin(time * 6 + p.ph)) * -5 * motion, xx = ((x % w) + w) % w;
+      g.fillStyle = p.c; g.beginPath(); g.moveTo(xx - p.s * .5, y); g.lineTo(xx + p.s * .5, y); g.lineTo(xx + p.s * .35, y - p.s * 2.4); g.lineTo(xx - p.s * .35, y - p.s * 2.4); g.fill();
+      g.fillStyle = '#c89a70'; g.beginPath(); g.arc(xx, y - p.s * 2.8, p.s * .42, 0, 7); g.fill();
     }
     this.t.needsUpdate = true;
   }

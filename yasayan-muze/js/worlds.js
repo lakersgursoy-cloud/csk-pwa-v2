@@ -3,6 +3,7 @@ import * as T from './textures.js';
 import { Panel } from './ui.js';
 import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
 import { makeActor, scatter, prop, bakeCrowd, getSky, ATLAS } from './actors.js';
+import { doorPainting, wallPainting, toTexture } from './paintings.js';
 
 // Sabit güneş gölgesi: sahneye girişte bir kez çizilir, her karede maliyet getirmez.
 function sunShadow(l, size, map = 2048) { l.castShadow = true; l.shadow.mapSize.set(map, map); const c = l.shadow.camera; c.left = c.bottom = -size; c.right = c.top = size; c.near = 1; c.far = 260; l.shadow.bias = -.0006; l.shadow.normalBias = .05; return l; }
@@ -83,9 +84,9 @@ export function buildMuseum() {
   // Yan duvar tabloları
   const brassLamp = lam({ color: '#8a6a2a' });
   ['deniz', 'kubbe', 'sur', 'orman'].forEach((art, i) => {
-    const tx = T.sceneArt(art);
+    const tx = toTexture(wallPainting(art));
     const s = i % 2 ? 1 : -1, z = 8 - (i >> 1) * 9, p = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.95), new THREE.MeshLambertMaterial({ map: tx, emissive: '#ffffff', emissiveMap: tx, emissiveIntensity: .35 }));
-    p.position.set(s * (W / 2 - .05), 3, z); p.rotation.y = -s * Math.PI / 2; g.add(box(.06, 2.2, 2.85, gold, s * (W / 2 - .01), 3, z), p, box(.08, .06, 1.2, brassLamp, s * (W / 2 - .3), 4.25, z));
+    p.position.set(s * (W / 2 - .08), 3, z); p.rotation.y = -s * Math.PI / 2; g.add(box(.06, 2.3, 2.95, gold, s * (W / 2 - .01), 3, z), box(.07, 2.08, 2.73, lam({ color: '#3a2a12' }), s * (W / 2 - .02), 3, z), box(.08, 1.98, 2.63, gold, s * (W / 2 - .03), 3, z), p, box(.08, .06, 1.2, brassLamp, s * (W / 2 - .3), 4.25, z));
     const pl = glow(2.2, '255,225,170'); pl.position.set(s * (W / 2 - .35), 3.9, z); pl.material.opacity = .22; g.add(pl);
   });
   // Konuşan heykel
@@ -93,14 +94,14 @@ export function buildMuseum() {
   // Kapılar
   const mkDoor = (x, title, sub, draw, color, side = 0, wz = 0) => {
     const d = new THREE.Group(); d.position.set(x, 0, cz - L / 2 + .05); if (side) { d.position.set(side * (W / 2 - .05), 0, wz); d.rotation.y = -side * Math.PI / 2; } d.scale.set(.86, .86, 1);
-    const p = new T.CrowdPainting(draw, 34), pic = new THREE.Mesh(new THREE.PlaneGeometry(3, 4.5), new THREE.MeshBasicMaterial({ map: p.t })); pic.position.set(0, 2.4, .12);
-    d.add(box(3.4, 4.9, .2, gold, 0, 2.45, 0), pic);
+    const p = new T.CrowdPainting(doorPainting(draw), { istanbul: 26, guanahani: 14, paris: 34, napolyon: 20, ankara: 30, hiroshima: 0, berlin: 30, nyc: 5 }[draw] ?? 24), pic = new THREE.Mesh(new THREE.PlaneGeometry(3, 4.5), new THREE.MeshBasicMaterial({ map: p.t })); pic.position.set(0, 2.4, .135);
+    d.add(box(3.5, 5, .2, gold, 0, 2.45, 0), box(3.22, 4.72, .23, lam({ color: '#3a2a12' }), 0, 2.45, 0), box(3.06, 4.56, .25, gold, 0, 2.45, 0), pic); for (const [x, y] of [[-1.62, .08], [1.62, .08], [-1.62, 4.82], [1.62, 4.82]]) { const o = new THREE.Mesh(new THREE.SphereGeometry(.11, 8, 6), gold); o.position.set(x, y, .12); d.add(o); }
     const l = new Panel(3, .72, { size: 62, bg: 'rgba(16,12,8,.92)' }).set(title, sub); l.position.set(0, 5.45, .12); d.add(l);
     const g2 = glow(5.4, color); g2.position.set(0, 2.5, -.2); g2.material.depthTest = false; g2.renderOrder = -1; d.add(g2);
     const hit = box(3.2, 4.8, .6, new THREE.MeshBasicMaterial({ visible: false }), 0, 2.4, .4); d.add(hit);
     Object.assign(d.userData, { painting: p, hit, glow: g2 }); g.add(d); return d;
   };
-  const door1453 = mkDoor(-4.65, '1453', 'İstanbul', T.drawIstanbul, '255,180,100'), door1492 = mkDoor(-1.55, '1492', 'Guanahani', T.drawGuanahani, '120,200,210'), door1789 = mkDoor(1.55, '1789', 'Paris', T.drawParis, '150,180,220'), door1923 = mkDoor(4.65, '1923', 'Ankara', T.drawAnkara, '255,120,110'), door1804 = mkDoor(0, '1804', 'Notre-Dame', T.drawNotre, '255,200,110', -1, -5.4), door1945 = mkDoor(0, '1945', 'Hiroşima', T.drawHiroshima, '200,210,220', -1, -9.8), door1989 = mkDoor(0, '1989', 'Berlin', T.drawBerlin, '160,180,230', 1, -5.4), door2001 = mkDoor(0, '2001', 'New York', T.drawNYC, '190,215,255', 1, -9.8);
+  const door1453 = mkDoor(-4.65, '1453', 'İstanbul', 'istanbul', '255,180,100'), door1492 = mkDoor(-1.55, '1492', 'Guanahani', 'guanahani', '120,200,210'), door1789 = mkDoor(1.55, '1789', 'Paris', 'paris', '150,180,220'), door1923 = mkDoor(4.65, '1923', 'Ankara', 'ankara', '255,120,110'), door1804 = mkDoor(0, '1804', 'Notre-Dame', 'napolyon', '255,200,110', -1, -5.4), door1945 = mkDoor(0, '1945', 'Hiroşima', 'hiroshima', '200,210,220', -1, -9.8), door1989 = mkDoor(0, '1989', 'Berlin', 'berlin', '160,180,230', 1, -5.4), door2001 = mkDoor(0, '2001', 'New York', 'nyc', '190,215,255', 1, -9.8);
   // Koleksiyon kaideleri
   const mkPedestal = (z, tx, x = 3) => {
     const p = new THREE.Group(); p.position.set(x, 0, z); p.add(box(.9, 1.05, .9, stone, 0, .525, 0));
