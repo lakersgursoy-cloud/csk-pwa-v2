@@ -54,3 +54,9 @@ test('Fatih sahnesi metinleri zaman sırasındadır ve kurgu sözü içermez', (
   const b = CHAPTERS.istanbul.spectacle.beats; assert.ok(b.length >= 6);
   b.forEach((x, i) => { if (i) assert.ok(x.t > b[i - 1].t); assert.ok(!/[“”"]/.test(x.text)); });
 });
+test('Yeniçeri bölümü yalnızca İstanbul’da açılır ve kayıt değiştirmez', () => {
+  let s = run(initialState(), [['door', 'paris'], ['climb']]); assert.equal(s.stage, 'traveller');
+  s = run(initialState(), [['door', 'istanbul'], ['climb']]); assert.equal(s.stage, 'assault');
+  s = advance(s, 'climbDone'); assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {});
+  const a = CHAPTERS.istanbul.assault; assert.equal(new Set(a.steps.map(x => x.label)).size, a.steps.length);
+});

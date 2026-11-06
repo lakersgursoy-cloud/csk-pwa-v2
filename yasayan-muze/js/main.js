@@ -71,10 +71,25 @@ for (const [cid, ch] of Object.entries(CHAPTERS)) {
     return { id, g, hl, plate, f };
   });
 }
-const fatih = { g: new THREE.Group(), act: makeActor({ model: 'king', robe: '#7a1f1f', cap: '#ece6d6', hat: 'turban', hair: '#3a2a1e' }), hl: glow(2.8, '255,210,130'), plate: new Panel(1.7, .26, { size: 62 }).set(CHAPTERS.istanbul.spectacle.label) };
-{ const f = fatih, hit = new THREE.Mesh(new THREE.SphereGeometry(.95, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); f.g.position.set(8.5, 0, -22); f.act.root.rotation.y = -.5; f.hl.position.y = 1.05; f.plate.position.y = 2.2; hit.position.y = 1; f.g.add(f.act.root, f.hl, f.plate, hit); f.g.visible = false; worlds.siege.group.add(f.g); worlds.siege.actors.push(f.act);
-  on(hit, CHAPTERS.istanbul.spectacle.label, () => watchFatih(), () => state.stage === 'traveller' && state.chapter === 'istanbul' && !busy); }
-async function watchFatih() { busy = true; sound.heartbeat(); await fade(1, 1.2); busy = false; go('watch'); }
+// 1453 kapısındaki iki özel giriş: Fatih'in Gözünden ve Son Dalga.
+function specialTrace(label, actorOpts, x, ry, event) {
+  const f = { g: new THREE.Group(), act: makeActor(actorOpts), hl: glow(2.8, '255,210,130'), plate: new Panel(1.7, .26, { size: 62 }).set(label) }, hit = new THREE.Mesh(new THREE.SphereGeometry(.95, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+  f.g.position.set(x, 0, -20.4); f.act.root.rotation.y = ry; f.hl.position.y = 1.05; f.plate.position.y = 2.2; hit.position.y = 1; f.g.add(f.act.root, f.hl, f.plate, hit); f.g.visible = false; worlds.siege.group.add(f.g); worlds.siege.actors.push(f.act);
+  on(hit, label, async () => { busy = true; sound.heartbeat(); await fade(1, 1.2); busy = false; go(event); }, () => state.stage === 'traveller' && state.chapter === 'istanbul' && !busy);
+  return f;
+}
+const specials = [specialTrace(CHAPTERS.istanbul.spectacle.label, { model: 'king', robe: '#7a1f1f', cap: '#ece6d6', hat: 'turban', hair: '#3a2a1e' }, 6.5, -1.3, 'watch'), specialTrace(CHAPTERS.istanbul.assault.label, { robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork' }, -6.5, 1.3, 'climb')];
+const showSpecials = (v) => specials.forEach(f => { f.g.visible = v; });
+// Tırmanış adımları tek bir hedefle ilerler.
+const climbGlow = glow(.42, '255,215,130'), climbHit = new THREE.Mesh(new THREE.SphereGeometry(.42, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); climbGlow.visible = climbHit.visible = false; worlds.siege.group.add(climbGlow, climbHit);
+const climb = { step: 0, it: null };
+const CLIMB = [
+  { at: [3, 1, -35.4], to: [3, 0, -37.9, 0] },
+  { at: [3, 2, -38.75], to: [3, 1.9, -38.2, 1.9] },
+  { at: [3, 3.9, -38.75], to: [3, 3.8, -38.2, 3.8] },
+  { at: [3, 5.8, -38.75], to: [3, 6, -38.2, 6] },
+  { at: [3, 8.2, -38.9], to: [3, 8.5, -41, 8.5], face: [3, 40] },
+];
 // Karakter sahnesi nesneleri: her geçişte etkin dünyaya taşınır.
 const prop = { group: new THREE.Group(), crate: box(1.1, .7, .7, lit({ color: '#5a3d22' })), kinds: {}, itemGlow: glow(.7, '255,210,120'), targetGlow: glow(1.3, '255,200,110'), climaxGlow: glow(1, '255,150,70') };
 const pHit = (r) => new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
@@ -127,9 +142,19 @@ async function replay(id) {
   busy = true; await fade(.86, .5); sound.thud(52, 1.6, 1); const ch = CHAPTERS[id], pick = Object.entries(state.done[id] || {}).pop();
   say(pick ? ch.characters[pick[0]].options[pick[1]].memory : ch.place, ch.trophy.title, 4.5); await wait(4.5); await fade(0, .8); busy = false;
 }
-const showTraces = (cid) => { fatih.g.visible = cid === 'istanbul'; for (const k in traces) traces[k].forEach(t => { t.g.visible = k === cid; const d = !!state.done[cid]?.[t.id]; t.hl.visible = !d; t.plate.set(`${CHAPTERS[k].characters[t.id].label}${d ? ' ✓' : ''}`); }); };
+const showTraces = (cid) => { showSpecials(cid === 'istanbul'); for (const k in traces) traces[k].forEach(t => { t.g.visible = k === cid; const d = !!state.done[cid]?.[t.id]; t.hl.visible = !d; t.plate.set(`${CHAPTERS[k].characters[t.id].label}${d ? ' ✓' : ''}`); }); };
 const heard = new Set();
-let wasWatching = false;
+let endNote = '';
+function nextClimb(a) {
+  const st = CLIMB[climb.step], x = a.steps[climb.step]; climbHit.position.set(...st.at); climbGlow.position.set(...st.at); climbHit.visible = climbGlow.visible = true; climb.it.label = x.label; say(x.text, a.title, 12);
+}
+async function doClimb() {
+  const a = CHAPTERS.istanbul.assault, st = CLIMB[climb.step]; climbHit.visible = climbGlow.visible = false; busy = true; pulse(.6, 60); sound.thud(90, .25, .5);
+  await fade(.82, .14); const [x, , z, fy] = st.to, face = st.face || [3, -60]; setWorld(worlds.siege, x, z, face[0], face[1], fy, { x: [x - 1.2, x + 1.2], z: [z - .6, z + .6] }); await fade(0, .22); climb.step++; busy = false;
+  if (climb.step < CLIMB.length) return nextClimb(a);
+  busy = true; say('Sancak burçta dalgalanıyor.', a.title, 4); worlds.siege.spect.raiseFlag(); worlds.siege.spect.plant(4.1, 8.5, -40.2); sound.cannon(); await wait(4); say(a.end, 'Tarih', 11); await wait(11); await fade(1, 2); worlds.siege.spect.stop(); busy = false; endNote = 'O sur gerçekti. Üstüne çıkanların çoğunun adını bilmiyoruz.'; go('climbDone');
+}
+climb.it = on(climbHit, '', () => doClimb(), () => state.stage === 'assault' && !busy);
 let token = 0;
 async function enter(stage) {
   const ch = CHAPTERS[state.chapter], c = currentCharacter(state), me = ++token;
@@ -138,13 +163,16 @@ async function enter(stage) {
     setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient(ch.world === 'paris' ? 'crowd' : 'camp'); allHands().forEach(h => { h.visible = true; });
     await fade(0, 1.2); say(ch.arrive.text, 'Zaman Yolcusu', 7); hint('Çevreyi dinle, sonra içine gireceğin hayatı seç.');
     await wait(7); if (token === me) say('Işıldayan izlerden birine dokun. İstediğin zaman dönüp başka birini seçebilirsin.', 'Zaman Yolcusu', 8);
+  } else if (stage === 'assault') {
+    const w = worlds.siege, a = ch.assault; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog, 64); setPersona(true, '#d8d0bc'); climb.step = 0; setWorld(w, 3, -32.6, 3, -60, 0, { x: [1, 5], z: [-34, -31] }); sound.ambient('camp');
+    await fade(0, 1.6); nextClimb(a);
   } else if (stage === 'spectacle') {
     const w = worlds.siege, sp = ch.spectacle; busy = true; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog); setPersona(true, '#7a1f1f'); setWorld(w, 0, 6.2, 0, -41, 9, { x: [-5, 5], z: [5.6, 15] }); sound.ambient('camp');
     await fade(0, 2); let at = 0;
     for (const b of sp.beats) { await wait(b.t - at); at = b.t; say(b.text, sp.title, 9); }
-    await wait(12); await fade(1, 2); w.spect.stop(); busy = false; wasWatching = true; go('watchDone');
+    await wait(12); await fade(1, 2); w.spect.stop(); busy = false; endNote = 'Tarihi tepeden gördün. Şimdi aynı geceyi orada yaşayanların gözünden görebilirsin.'; go('watchDone');
   } else if (stage === 'wake') {
-    fatih.g.visible = false; for (const t of traces[state.chapter]) t.g.visible = false;
+    showSpecials(false); for (const t of traces[state.chapter]) t.g.visible = false;
     worlds[c.world].reset(); setupProps(c); setPersona(true, c.sleeve); setWorld(worlds[c.world], ...c.spawn, ...c.face, c.floorY, c.bounds); hint(`${c.item.label}: al.`);
     await wait(.8); if (token === me) say(c.wake, c.label, 8);
   } else if (stage === 'carry') {
@@ -168,7 +196,7 @@ async function enter(stage) {
     busy = true; hint(''); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
     setWorld(museum, 3, ch && state.chapter === 'paris' ? -.6 : 4.2, 3, ch && state.chapter === 'paris' ? -3.4 : 1); sound.ambient('museum');
     for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy);
-    await fade(0, 1); if (wasWatching) { wasWatching = false; say('Tarihi tepeden gördün. Şimdi aynı geceyi orada yaşayanların gözünden görebilirsin.', 'Saat 00.24', 8); busy = false; return; } say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
+    await fade(0, 1); if (endNote) { say(endNote, 'Saat 00.24', 8); endNote = ''; busy = false; return; } say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
   }
 }
 
@@ -245,7 +273,7 @@ function animate(dt) {
   } else {
     world.tick(dt, time); prop.itemGlow.material.opacity = .7 + Math.sin(time * 4) * .3;
     if (state.stage === 'traveller') {
-      if (fatih.g.visible) { fatih.hl.material.opacity = .22 + Math.sin(time * 2.4) * .1; fatih.plate.lookAt(headPos); }
+      for (const f of specials) if (f.g.visible) { f.hl.material.opacity = .22 + Math.sin(time * 2.4) * .1; f.plate.lookAt(headPos); }
       traces[state.chapter].forEach(t => { t.hl.material.opacity = .16 + Math.sin(time * 3) * .07; t.plate.lookAt(headPos); });
       world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); } });
     }
@@ -256,8 +284,12 @@ function animate(dt) {
 }
 let statueSpoke = false;
 
+// Otomatik kalite: VR'da kare süresi uzarsa kalabalık ve yürüyen karakterler azalır.
+const perf = { t: 0, n: 0, level: 0 }, LEVELS = [1, .6, .35, .2];
+function applyQuality() { worlds.siege.spect.setDensity(LEVELS[perf.level]); if (perf.level >= 1) for (const w of Object.values(worlds)) w.actors?.forEach(a => { if (a.path) a.root.visible = false; }); }
+function watchPerf(raw) { if (!renderer.xr.isPresenting || fadeJob) { perf.t = perf.n = 0; return; } perf.t += raw; perf.n++; if (perf.t < 2.5) return; const avg = perf.t / perf.n; perf.t = perf.n = 0; if (avg > 1 / 58 && perf.level < LEVELS.length - 1) { perf.level++; applyQuality(); } }
 const clock = new THREE.Clock(), SPEED = TEST ? +(new URLSearchParams(location.search).get('hiz') || 1) : 1;
-renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .1) * SPEED; animate(dt); renderer.render(scene, camera); });
+renderer.setAnimationLoop(() => { const raw = clock.getDelta(); watchPerf(raw); const dt = Math.min(raw, .1) * SPEED; animate(dt); renderer.render(scene, camera); });
 
 async function begin(xr) {
   sound.start(); sound.ambient('museum'); $('giris').hidden = true;
@@ -275,4 +307,4 @@ navigator.xr?.isSessionSupported('immersive-vr').then(ok => { $('vr').disabled =
 if (!navigator.xr) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.';
 
 renderer.shadowMap.needsUpdate = true;
-if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, get said() { return lastSay; }, items, rig, camera, renderer, prop, tunnel, worlds, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };
+if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, perf, climb, get said() { return lastSay; }, items, rig, camera, renderer, prop, tunnel, worlds, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };

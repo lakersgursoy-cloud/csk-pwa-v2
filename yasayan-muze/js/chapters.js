@@ -3,9 +3,21 @@ export const CHAPTERS = {
   istanbul: {
     year: '1453', place: 'İstanbul', world: 'siege', hintAt: 'Mayıs 1453',
     arrive: { at: [0, -19.5], face: [0, -45], text: 'Mayıs 1453. Surların önündesin. Kimse seni göremiyor.' },
-    traces: [[-4, -21.5], [0, -22], [4, -21.5]],
+    traces: [[-3, -22.5], [0, -23], [3, -22.5]],
     lines: [['“Duvarın dibine kadar yürüsek de geri dönen olur mu?” diye fısıldıyor biri.', 'Asker'], ['“Yedi kez ateş edecek, sonra soğumasını bekleyeceğiz.”', 'Topçu']],
     trophy: { name: 'Tarihî harita kopyası', item: 'map', title: 'Anı · Mayıs 1453' },
+    // Adı bilinmeyen kurgusal bir yeniçeri. Çatışma gösterilmez; odak tırmanış ve o andır.
+    assault: {
+      label: 'Son Dalga: Yeniçeri', title: 'Yeniçeri',
+      steps: [
+        { label: 'Hendeği geç', text: 'Ufuk ağarıyor. Son dalgadasın. Önündeki hendeğin kısmen doldurulmuş kısmından geç.' },
+        { label: 'Alttaki basamağı tut', text: 'Merdiven dış surda. Sıradaki basamağa uzan ve tut.' },
+        { label: 'Bir basamak daha', text: 'Yukarıdan taş yağıyor. Aşağı bakma.' },
+        { label: 'Son basamak', text: 'Az kaldı. Burçlar artık uzanacak kadar yakın.' },
+        { label: 'Sancağı dik', text: 'Dış surun üstündesin. Yanında otuz kadar yoldaş var. Sancağı dik.' },
+      ],
+      end: 'Kaynaklar, Hasan adlı bir yeniçerinin yaklaşık otuz kişiyle surlara çıktığını anlatır. Sen onlardan biri olabilirdin. Saatler sonra sancaklar kulelerde dalgalanıyordu.',
+    },
     // Gerçek olayların kısaltılmış anlatımı. Fatih'e söz yazılmaz; oyuncu izler.
     spectacle: {
       label: 'Fatih’in Gözünden', title: '29 Mayıs 1453',

@@ -11,6 +11,8 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Paris 1789: matbaa çalışanı, Fransız Muhafızı askeri, pazarcı
 - Her karakterde görev, karar, kişisel sonuç ve aynı tarihî an
 - Fatih’in Gözünden: 29 Mayıs gecesini tepeden izleme, binlerce asker, üç saldırı dalgası, şafakta sancaklar
+- Son Dalga: yeniçeri olarak hendeği geçme, elle merdiven tırmanma, sancak dikme
+- VR'da otomatik kalite: takılma olursa kalabalık azalır
 - Üç karakter bitince ortak final; karakterleri tamamlamak zorunlu değil
 - Müzede kalan iki nesne ve dokununca canlanan anı (tarayıcıda hatırlanır)
 - Işınlanma yayı, akıcı harekette görüş kenarı karartması, 30° adımlı dönüş

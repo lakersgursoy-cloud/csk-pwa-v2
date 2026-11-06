@@ -20,6 +20,8 @@ export function advance(state, event, payload) {
     return state.listened.includes(payload) ? state : { ...state, listened: [...state.listened, payload] };
   }
   if (stage === 'traveller' && event === 'watch' && CHAPTERS[state.chapter].spectacle) return { ...state, stage: 'spectacle', character: null, choice: null };
+  if (stage === 'traveller' && event === 'climb' && CHAPTERS[state.chapter].assault) return { ...state, stage: 'assault', character: null, choice: null };
+  if (stage === 'assault' && event === 'climbDone') return { ...state, stage: 'museum' };
   if (stage === 'spectacle' && event === 'watchDone') return { ...state, stage: 'museum' };
   if (stage === 'traveller' && event === 'touch') {
     if (!CHAPTERS[state.chapter].characters[payload]) return state;
