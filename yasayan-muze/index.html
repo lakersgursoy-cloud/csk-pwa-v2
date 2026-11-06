@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Yaşayan Müze VR</title>
+<meta name="description" content="Zamanın Tanıkları: Meta Quest 3 için WebXR prototipi">
+<style>
+:root{--bg:#0d0b09;--ink:#f1e7d4;--mut:#b5a78f;--gold:#d9a845}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Georgia,'Times New Roman',serif;overflow:hidden}
+canvas{position:fixed;inset:0;display:block}
+#giris{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;padding:24px 16px;text-align:center;background:radial-gradient(circle at 50% 35%,#2a2015,#0d0b09 70%);z-index:5}
+#giris[hidden]{display:none}
+h1{font-size:clamp(32px,7vw,58px);font-weight:400;margin:0;letter-spacing:.02em}
+.alt{color:var(--gold);letter-spacing:.2em;text-transform:uppercase;font-size:13px;margin:0}
+p{max-width:520px;line-height:1.5;color:var(--mut);margin:0}
+button{font:inherit;font-size:18px;padding:14px 26px;min-height:48px;border-radius:4px;cursor:pointer;border:1px solid var(--gold);background:var(--gold);color:#17110a}
+button.ikinci{background:transparent;color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+#hud{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);max-width:min(640px,calc(100vw - 32px));font-size:15px;color:var(--ink);background:#0009;padding:6px 12px;border-radius:4px;z-index:3;text-align:center}
+#hud:empty{display:none}
+#arti{position:fixed;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;border:1.5px solid #fff;z-index:3;display:none}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+</head>
+<body>
+<div id="giris">
+  <p class="alt">Zamanın Tanıkları</p>
+  <h1>Yaşayan Müze</h1>
+  <p id="bilgi">Saat 00.24. Müze kapandı. Sen hâlâ içeridesin.</p>
+  <div class="btns">
+    <button id="vr" disabled>VR'a Gir</button>
+    <button id="masa" class="ikinci">Ekranda Dene</button>
+  </div>
+</div>
+<div id="arti"></div>
+<div id="hud"></div>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

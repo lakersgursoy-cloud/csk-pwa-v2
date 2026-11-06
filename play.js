@@ -22,6 +22,11 @@ function renderPlay(container, user) {
       <p class="mut">Koçun verdiği ödevleri izle.</p>
       <a href="./teknik-lab/" class="btn" style="display:block;text-align:center;text-decoration:none;line-height:46px">Teknik Lab’a git</a>
     </div>
+    <div class="card">
+      <h2>Yaşayan Müze VR</h2>
+      <p class="mut">1453 İstanbul’a gir. Meta Quest 3 tarayıcısında VR olarak açılır.</p>
+      <a href="./yasayan-muze/" class="btn" style="display:block;text-align:center;text-decoration:none;line-height:46px">Müzeye gir</a>
+    </div>
   `;
   const open = document.getElementById("ankaOpen");
   if (open) open.onclick = () => { if (window.openAnka) window.openAnka(); };
