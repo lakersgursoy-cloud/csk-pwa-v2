@@ -1,0 +1,73 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { advance, initialState } from '../js/story.js';
+import { CHAPTERS } from '../js/chapters.js';
+
+const run = (s, evs) => evs.reduce((a, [e, p]) => advance(a, e, p), s);
+const life = (c, o) => [['touch', c], ['takeItem'], ['deliver'], ['choose', o], ['outcomeDone'], ['act'], ['collect']];
+
+for (const [ch, data] of Object.entries(CHAPTERS)) {
+  test(`${ch}: üç karakter ve tam içerik`, () => {
+    assert.equal(Object.keys(data.characters).length, 3);
+    for (const c of Object.values(data.characters)) {
+      for (const k of ['label', 'wake', 'carry', 'prompt', 'history']) assert.ok(c[k], k);
+      assert.equal(Object.keys(c.options).length, 2);
+      for (const o of Object.values(c.options)) for (const k of ['label', 'result', 'memory', 'finale']) assert.ok(o[k], k);
+    }
+  });
+  for (const [c, cd] of Object.entries(data.characters)) for (const o of Object.keys(cd.options)) {
+    test(`${ch}/${c}/${o} bölümü müzede biter`, () => {
+      const s = run(initialState(), [['door', ch], ...life(c, o)]);
+      assert.equal(s.stage, 'museum'); assert.equal(s.done[ch][c], o);
+    });
+  }
+  test(`${ch}: üçü bitince ortak final açılır ve kayıtlar korunur`, () => {
+    const cs = Object.entries(data.characters); let s = initialState();
+    cs.forEach(([c, d], i) => {
+      s = run(s, [['door', ch], ...life(c, Object.keys(d.options)[0])]);
+      assert.equal(s.stage, i === 2 ? 'finale' : 'museum');
+    });
+    s = advance(s, 'finish'); assert.equal(s.stage, 'museum'); assert.equal(Object.keys(s.done[ch]).length, 3);
+  });
+}
+test('adımlar atlanamaz, geçersiz girdiler yok sayılır', () => {
+  let s = initialState();
+  assert.equal(advance(s, 'door', 'yok').stage, 'museum'); assert.equal(advance(s, 'act').stage, 'museum');
+  s = advance(s, 'door', 'paris'); assert.equal(advance(s, 'deliver').stage, 'traveller'); assert.equal(advance(s, 'touch', 'topcu').stage, 'traveller');
+  s = run(s, [['touch', 'asker'], ['takeItem'], ['deliver']]); assert.equal(advance(s, 'choose', 'yusuf').stage, 'choice');
+});
+test('dinleme yalnızca zaman yolcusuyken ve bir kez sayılır', () => {
+  assert.deepEqual(advance(initialState(), 'listen', 'a').listened, []);
+  assert.deepEqual(run(initialState(), [['door', 'paris'], ['listen', 'a'], ['listen', 'a']]).listened, ['a']);
+});
+test('müzeye dönüp yeni karakter seçilebilir, önceki seçim kalır', () => {
+  const s = run(initialState(), [['door', 'istanbul'], ...life('topcu', 'usta'), ['door', 'istanbul']]);
+  assert.equal(s.stage, 'traveller'); assert.equal(s.done.istanbul.topcu, 'usta');
+});
+test('İzleme sahneleri iki dönemde de açılır, seçim ve kayıt değiştirmez', () => {
+  let s = run(initialState(), [['door', 'paris'], ['watch']]); assert.equal(s.stage, 'spectacle');
+  s = run(initialState(), [['door', 'istanbul'], ['watch']]); assert.equal(s.stage, 'spectacle');
+  assert.equal(advance(s, 'touch', 'topcu').stage, 'spectacle');
+  s = advance(s, 'watchDone'); assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {});
+});
+test('İzleme sahnesi metinleri zaman sırasındadır ve kurgu sözü içermez', () => {
+  for (const c of Object.keys(CHAPTERS)) { const b = CHAPTERS[c].spectacle.beats; assert.ok(b.length >= 6); b.forEach((x, i) => { if (i) assert.ok(x.t > b[i - 1].t); assert.ok(!/[“”"]/.test(x.text)); }); }
+});
+test('Yeniçeri bölümü yalnızca İstanbul’da açılır ve kayıt değiştirmez', () => {
+  let s = run(initialState(), [['door', 'paris'], ['climb']]); assert.equal(s.stage, 'traveller');
+  s = run(initialState(), [['door', 'istanbul'], ['climb']]); assert.equal(s.stage, 'assault');
+  s = advance(s, 'climbDone'); assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {});
+  const a = CHAPTERS.istanbul.assault; assert.equal(new Set(a.steps.map(x => x.label)).size, a.steps.length);
+});
+test('Her an müzeye dönülür, kayıt bozulmaz', () => {
+  let s = run(initialState(), [['door', 'hiroshima'], ['touch', 'hemsire'], ['takeItem'], ['abort']]);
+  assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {}); assert.equal(s.chapter, 'hiroshima');
+  assert.equal(advance(initialState(), 'abort').stage, 'museum');
+});
+test('Ağır bölümlerde uyarı var, saldırıyı yapan biri oynanamaz', () => {
+  for (const id of ['hiroshima', 'nyc']) {
+    const c = CHAPTERS[id]; assert.ok(c.solemn && c.notice);
+    for (const k of Object.values(c.characters)) assert.ok(!/pilot|bombard|korsan|mürettebat/i.test(k.label));
+  }
+});
+test('Her bölümün yılı benzersizdir', () => { const y = Object.values(CHAPTERS).map(c => c.year); assert.equal(new Set(y).size, y.length); });
