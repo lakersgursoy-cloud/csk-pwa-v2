@@ -209,9 +209,9 @@ function houses(g, side, from, to, x, colors, roof) {
 }
 
 // Fatih'in Gözünden: tepe, otağ, binlerce asker ve son saldırı.
-const SOLDIER = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 5); b.translate(0, .62, 0); const h = new THREE.OctahedronGeometry(.13, 0); h.translate(0, 1.42, 0); const sp = new THREE.BoxGeometry(.03, 2.3, .03); sp.translate(.22, 1.1, 0); return mergeGeometries([b.toNonIndexed(), h, sp.toNonIndexed()].map(x => { x.deleteAttribute('uv'); return x; })); })();
+const SOLDIER = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 4, 1, true); b.translate(0, .62, 0); const h = new THREE.TetrahedronGeometry(.17, 0); h.translate(0, 1.42, 0); const sp = new THREE.PlaneGeometry(.05, 2.3); sp.translate(.22, 1.1, 0); return mergeGeometries([b.toNonIndexed(), h, sp.toNonIndexed()].map(x => { x.deleteAttribute('uv'); return x; })); })();
 function army(n, make) {
-  const geo = SOLDIER.clone(), w = new Float32Array(n * 4), m = new THREE.InstancedMesh(geo, lam({ color: '#fff' }), n), M = new THREE.Matrix4(), c = new THREE.Color();
+  const geo = SOLDIER.clone(), w = new Float32Array(n * 4), m = new THREE.InstancedMesh(geo, lam({ color: '#fff', side: THREE.DoubleSide }), n), M = new THREE.Matrix4(), c = new THREE.Color();
   const uni = { uT: { value: 0 } };
   for (let i = 0; i < n; i++) { const o = make(i); M.setPosition(o.x, o.y ?? 0, o.z); m.setMatrixAt(i, M); m.setColorAt(i, c.set(o.color)); w.set([o.delay, o.speed, o.dist, o.back], i * 4); }
   geo.setAttribute('aW', new THREE.InstancedBufferAttribute(w, 4));
