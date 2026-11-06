@@ -10,6 +10,7 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - İstanbul 1453: topçu yardımcısı, Bizans savunmacısı, esnaf
 - Paris 1789: matbaa çalışanı, Fransız Muhafızı askeri, pazarcı
 - Her karakterde görev, karar, kişisel sonuç ve aynı tarihî an
+- Fatih’in Gözünden: 29 Mayıs gecesini tepeden izleme, binlerce asker, üç saldırı dalgası, şafakta sancaklar
 - Üç karakter bitince ortak final; karakterleri tamamlamak zorunlu değil
 - Müzede kalan iki nesne ve dokununca canlanan anı (tarayıcıda hatırlanır)
 - Işınlanma yayı, akıcı harekette görüş kenarı karartması, 30° adımlı dönüş

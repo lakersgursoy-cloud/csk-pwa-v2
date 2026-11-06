@@ -6,6 +6,20 @@ export const CHAPTERS = {
     traces: [[-4, -21.5], [0, -22], [4, -21.5]],
     lines: [['“Duvarın dibine kadar yürüsek de geri dönen olur mu?” diye fısıldıyor biri.', 'Asker'], ['“Yedi kez ateş edecek, sonra soğumasını bekleyeceğiz.”', 'Topçu']],
     trophy: { name: 'Tarihî harita kopyası', item: 'map', title: 'Anı · Mayıs 1453' },
+    // Gerçek olayların kısaltılmış anlatımı. Fatih'e söz yazılmaz; oyuncu izler.
+    spectacle: {
+      label: 'Fatih’in Gözünden', title: '29 Mayıs 1453',
+      beats: [
+        { t: 0, text: 'Son saldırı gece yarısından sonra başlıyor. Otağının önündesin, ordu surların karşısında bekliyor.' },
+        { t: 11, text: 'İlk dalga başıbozuklar. Merdivenleri surlara dayıyorlar.' },
+        { t: 31, text: 'Yaklaşık bir saat sonra ilk dalga geri çağrılıyor.' },
+        { t: 41, text: 'İkinci dalga Anadolu birlikleri. Hendeği geçip merdivenleri yeniden kuruyorlar.' },
+        { t: 58, text: 'Son dalga yeniçeriler. Ufuk ağarmaya başlıyor.' },
+        { t: 72, text: 'Savunmanın komutanı Giustiniani yaralanıyor ve surlardan çekiliyor. Savunma sarsılıyor.' },
+        { t: 84, text: 'Geleneğe göre Ulubatlı Hasan sancağı surlara ilk diken yeniçeridir. Sancaklar kulelerde yükseliyor.' },
+        { t: 96, text: 'Fatih Sultan Mehmed şehre o gün öğleden sonra girdi ve Ayasofya’ya gitti. 53 günlük kuşatma sona erdi.' },
+      ],
+    },
     closing: 'Kuşatma 6 Nisan’da başladı. Son saldırı 29 Mayıs gece yarısından sonra geldi ve şehir o gün düştü. Üç hayat, aynı gün.',
     characters: {
       topcu: {

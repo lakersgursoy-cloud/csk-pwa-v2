@@ -19,6 +19,8 @@ export function advance(state, event, payload) {
   if (stage === 'traveller' && event === 'listen') {
     return state.listened.includes(payload) ? state : { ...state, listened: [...state.listened, payload] };
   }
+  if (stage === 'traveller' && event === 'watch' && CHAPTERS[state.chapter].spectacle) return { ...state, stage: 'spectacle', character: null, choice: null };
+  if (stage === 'spectacle' && event === 'watchDone') return { ...state, stage: 'museum' };
   if (stage === 'traveller' && event === 'touch') {
     if (!CHAPTERS[state.chapter].characters[payload]) return state;
     return { ...state, stage: 'wake', character: payload, choice: null };

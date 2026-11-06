@@ -148,7 +148,7 @@ export function buildSiege() {
   tents.forEach(([x, z], i) => { const t = new THREE.Mesh(tentGeo, tentMat[i % 3]); t.position.set(x, 1.45, z); t.scale.setScalar(1 + (i % 3) * .2); g.add(t); });
   // Çit: hendek gerisindeki ahşap perde
   const woodM = lam({ map: T.wood(3, 1) }), posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(.11, .14, 2.6, 6), woodM, 44); let pi = 0;
-  for (let x = -24; x <= 24; x += 1.12) { if (Math.abs(x - 4) < 1.7) continue; M.setPosition(x, 1.3, -18); posts.setMatrixAt(pi++, M); } posts.count = pi; g.add(posts);
+  for (let x = -24; x <= 24; x += 1.12) { if (Math.abs(x - 4) < 1.7) continue; M.setPosition(x, 1.3, -18); posts.setMatrixAt(pi++, M); } posts.count = pi; posts.userData.dyn = true; g.add(posts);
   // Büyük top
   const bronze = lam({ color: '#7b5d33', emissive: '#150c04' }), gun = new THREE.Group(); gun.position.set(4, 0, -12.5);
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.62, .55, 5.4, 18, 1), bronze); barrel.rotation.x = Math.PI / 2 - .05; barrel.position.y = 1.15; gun.add(barrel);
@@ -182,12 +182,13 @@ export function buildSiege() {
   contactShadows(g, [...people.map(p => [p.position.x, 0, p.position.z, 1.1]), ...groups.flat().map(p => [p.position.x, 0, p.position.z, 1.1]), [2.4, 0, -6.8, 1.1], [-1.2, 0, -7, 1.1], [4, 0, -11.5, 6], ...tents.map(([x, z]) => [x, 0, z, 7]), ...[[8.5, -8], [9.8, -7.2], [9, -6.2], [8.7, -7.1]].map(([x, z]) => [x, 0, z, 2])]);
   bakeStatic(g);
   const smoke = makeSmoke(g, 10), flash = glow(11, '255,210,140'); flash.position.copy(muzzle); flash.visible = false; g.add(flash);
-  g.add(new THREE.HemisphereLight('#c8a68a', '#32281e', 1.2)); const sun = sunShadow(new THREE.DirectionalLight('#ffb878', 2.6), 72); sun.position.set(-60, 42, 90); sun.target.position.set(0, 0, -20); g.add(sun, sun.target);
+  const hemi = new THREE.HemisphereLight('#c8a68a', '#32281e', 1.2); g.add(hemi); const sun = sunShadow(new THREE.DirectionalLight('#ffb878', 2.6), 72); sun.position.set(-60, 42, 90); sun.target.position.set(0, 0, -20); g.add(sun, sun.target);
   let flashT = 0;
-  return { group: g, groups, actors, floorY: 0, fog: new THREE.Fog('#7c5a48', 30, 150), bg: '#3a2c2c',
+  const spect = buildSpectacle(g, { sky, hemi, sun, posts, smoke, fog: null, actors });
+  return { group: g, groups, actors, spect, floorY: 0, fog: new THREE.Fog('#7c5a48', 30, 150), bg: '#3a2c2c',
     climax(sound) { sound.cannon(); flash.visible = true; flashT = .18; smoke.burst(muzzle, 6, 2.4); smoke.burst(new THREE.Vector3(14, 7, -39.6), 4, 1.1, 1.3); },
     reset() { smoke.clear(); flash.visible = false; },
-    tick(dt, t) { runActors(actors, dt); fires.forEach((f, i) => f.scale.setScalar(2.2 + Math.sin(t * 9 + i * 2) * .3)); fireLight.intensity = 42 + Math.sin(t * 11) * 7; for (const f of people) f.userData.head.rotation.y = Math.sin(t * .7 + f.userData.phase) * .35; if (flashT > 0 && (flashT -= dt) <= 0) flash.visible = false; smoke.tick(dt); } };
+    tick(dt, t) { spect.tick(dt); runActors(actors, dt); fires.forEach((f, i) => f.scale.setScalar(2.2 + Math.sin(t * 9 + i * 2) * .3)); fireLight.intensity = 42 + Math.sin(t * 11) * 7; for (const f of people) f.userData.head.rotation.y = Math.sin(t * .7 + f.userData.phase) * .35; if (flashT > 0 && (flashT -= dt) <= 0) flash.visible = false; smoke.tick(dt); } };
 }
 
 function makeSmoke(g, n) {
@@ -205,6 +206,58 @@ function houses(g, side, from, to, x, colors, roof) {
     const h = 6.5 + (i * 37 % 4), m = colors[i % colors.length]; g.add(box(6, h, 5.6, m, side * x, h / 2, z), box(6.5, .25, 6.1, r, side * x, h, z));
     const c = new THREE.Mesh(new THREE.ConeGeometry(4.6, 2, 4), r); c.position.set(side * x, h + 1, z); c.rotation.y = Math.PI / 4; c.scale.z = .9; g.add(c);
   }
+}
+
+// Fatih'in Gözünden: tepe, otağ, binlerce asker ve son saldırı.
+const SOLDIER = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 5); b.translate(0, .62, 0); const h = new THREE.OctahedronGeometry(.13, 0); h.translate(0, 1.42, 0); const sp = new THREE.BoxGeometry(.03, 2.3, .03); sp.translate(.22, 1.1, 0); return mergeGeometries([b.toNonIndexed(), h, sp.toNonIndexed()].map(x => { x.deleteAttribute('uv'); return x; })); })();
+function army(n, make) {
+  const geo = SOLDIER.clone(), w = new Float32Array(n * 4), m = new THREE.InstancedMesh(geo, lam({ color: '#fff' }), n), M = new THREE.Matrix4(), c = new THREE.Color();
+  const uni = { uT: { value: 0 } };
+  for (let i = 0; i < n; i++) { const o = make(i); M.setPosition(o.x, o.y ?? 0, o.z); m.setMatrixAt(i, M); m.setColorAt(i, c.set(o.color)); w.set([o.delay, o.speed, o.dist, o.back], i * 4); }
+  geo.setAttribute('aW', new THREE.InstancedBufferAttribute(w, 4));
+  m.material.onBeforeCompile = (s) => {
+    s.uniforms.uT = uni.uT;
+    s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vColor * .32;');
+    s.vertexShader = 'attribute vec4 aW; uniform float uT;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      float p = max(0., uT - aW.x), d = min(p * aW.y, aW.z), r = max(0., uT - aW.w) * aW.y * 1.3; d = max(0., d - r);
+      transformed.z -= d; if (aW.y > 0. && p > 0.) transformed.y += abs(sin(uT * 6. + aW.x * 9.)) * .12;`);
+  };
+  m.material.customProgramCacheKey = () => 'muze-army'; m.frustumCulled = false; m.userData.dyn = true; m.userData.uni = uni; return m;
+}
+function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
+  const root = new THREE.Group(); root.visible = false; g.add(root); const R = (a) => Math.random() * a;
+  const hill = new THREE.Mesh(new THREE.CylinderGeometry(7, 13, 9, 18), lam(T.pbr(T.dirt(5, 2), 1.6))); hill.position.set(0, 4.5, 12); hill.castShadow = hill.receiveShadow = true; root.add(hill);
+  const red = lam({ color: '#8c1f1c' }), gold = lam({ color: '#b98a35' }), otag = new THREE.Mesh(new THREE.ConeGeometry(5.6, 5, 12), red); otag.position.set(0, 12, 19.5); const wallT = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 2.6, 12), lam({ color: '#c9b48a' })); wallT.position.set(0, 10.3, 19.5); const band = new THREE.Mesh(new THREE.TorusGeometry(4.6, .1, 6, 24), gold); band.rotation.x = Math.PI / 2; band.position.set(0, 11.6, 19.5); root.add(otag, wallT, band);
+  const banners = []; const banner = (x, z, color, y = 9, h = 7) => { const f = new THREE.Group(); f.position.set(x, y, z); const pole = new THREE.Mesh(new THREE.CylinderGeometry(.05, .06, h, 6), lam({ color: '#3a2a1a' })); pole.position.y = h / 2; const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1, 8, 3), new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide })); cloth.position.set(.95, h - .7, 0); f.add(pole, cloth); f.userData.cloth = cloth; root.add(f); banners.push(cloth); return f; };
+  for (const [x, z] of [[-5, 8], [5, 8], [-6, 15], [6, 15]]) banner(x, z, '#a81f1c');
+  for (const [x, z, r] of [[-3.5, 9.5, 0], [3.5, 9.5, 0], [-5, 13, 1.4], [5, 13, -1.4]]) { const a = makeActor({ robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork', anim: 'Idle_Sword' }); a.root.position.set(x, 9, z); a.root.rotation.y = Math.PI + r; root.add(a.root); actors.push(a); }
+  // Dalgalar: her asker GPU'da hareket eder, Quest'te işlemciyi yormaz.
+  const waves = [{ n: 2600, delay: 11, back: 31, colors: ['#6e4a30', '#4f3d2c', '#7a6a50', '#3a3a30'], speed: 3 }, { n: 2200, delay: 41, back: 57, colors: ['#8c2a22', '#6a6f78', '#a8382a'], speed: 3.2 }, { n: 1800, delay: 58, back: 9999, colors: ['#e0dac8', '#2f4a78', '#e8e0d0'], speed: 3.4 }];
+  let idx = 0; const wavesAll = waves.flatMap(w => Array.from({ length: w.n }, () => w));
+  const men = army(wavesAll.length + 900, (i) => {
+    if (i >= wavesAll.length) { const b = i % 3; return b === 0 ? { x: -100 + R(200), y: 9, z: -39.9 - R(.8), color: '#4e4b53', delay: 0, speed: 0, dist: 0, back: 9999 } : { x: -100 + R(200), y: 13, z: -49.9 - R(1), color: '#4e4b53', delay: 0, speed: 0, dist: 0, back: 9999 }; }
+    const w = wavesAll[i], u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.5) * 90, rank = R(1), z0 = 3 - rank * 28; return { x, z: z0, color: w.colors[i % w.colors.length], delay: w.delay + rank * 7, speed: w.speed + R(.5), dist: Math.max(1, z0 + 30 + R(2.5)), back: w.back + R(4) };
+  }); root.add(men);
+  const lad = new THREE.InstancedMesh(new THREE.BoxGeometry(.5, 10, .08), lam({ map: T.wood(1, 6) }), 60), M = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromEuler(new THREE.Euler(.2, 0, 0));
+  for (let i = 0; i < 60; i++) { M.compose(new THREE.Vector3(-90 + i * 3.1 + R(1.5), 4.6, -38.8), Q, new THREE.Vector3(1, 1, 1)); lad.setMatrixAt(i, M); } lad.userData.dyn = true; lad.visible = false; root.add(lad);
+  const guns = [-46, -28, -12, 4, 22, 40].map(x => { const s = glow(9, '255,200,120'); s.position.set(x, 1.3, -16); s.visible = false; root.add(s); return s; });
+  const wallFires = Array.from({ length: 16 }, (_, i) => { const s = glow(2, '255,140,60'); s.position.set(-80 + i * 11, i % 2 ? 9.6 : 13.8, i % 2 ? -39.8 : -49.6); root.add(s); return s; });
+  const flags = [-24, 0, 24].map(x => { const f = banner(x, -52, '#a81f1c', 21, 7); f.scale.y = .001; f.visible = false; return f; });
+  const night = new THREE.Color('#4a5680'), day = new THREE.Color('#fff'), fogN = new THREE.Color('#2c3350'), fogD = new THREE.Color('#c08a68');
+  const s = { active: false, t: 0, sound: null, nextGun: 2, fog: null, flagT: -1 };
+  s.start = (sound, fog) => { s.active = true; s.t = 0; s.sound = sound; s.nextGun = 3; s.fog = fog; s.flagT = -1; s.saved = fog.color.clone(); s.far = [fog.near, fog.far]; fog.near = 60; fog.far = 240; root.visible = true; lad.visible = false; posts.visible = false; sky.rotation.y = Math.PI; sun.position.set(30, 22, -130); men.userData.uni.uT.value = 0; flags.forEach(f => { f.visible = false; f.scale.y = .001; }); };
+  s.stop = () => { s.active = false; root.visible = false; posts.visible = true; sky.rotation.y = 0; sky.material.color.set('#fff'); sun.position.set(-60, 42, 90); sun.intensity = 2.6; hemi.intensity = 1.2; s.fog.color.copy(s.saved); s.fog.near = s.far[0]; s.fog.far = s.far[1]; };
+  s.tick = (dt) => {
+    if (!s.active) return; s.t += dt; const t = s.t, n = THREE.MathUtils.smoothstep(t, 50, 92); men.userData.uni.uT.value = t;
+    sky.material.color.lerpColors(night, day, n); hemi.intensity = 1 + n * 1; sun.intensity = .12 + n * 2.3; s.fog.color.lerpColors(fogN, fogD, n);
+    lad.visible = (t > 22 && t < 34) || (t > 50 && t < 60) || t > 68;
+    wallFires.forEach((f, i) => { f.scale.setScalar(2 + Math.sin(t * 8 + i) * .5); f.material.opacity = 1 - n * .6; });
+    for (const b of banners) { const p = b.geometry.attributes.position; b.userData.x0 ??= Array.from({ length: p.count }, (_, i) => p.getX(i)); for (let i = 0; i < p.count; i++) { const x = b.userData.x0[i] + .9; p.setZ(i, Math.sin(x * 3 - t * 5) * .12 * x); } p.needsUpdate = true; }
+    guns.forEach(g2 => { g2.visible = false; });
+    if (t > s.nextGun && t < 80) { s.nextGun = t + 3.6 + R(4); const g2 = guns[R(6) | 0]; g2.visible = true; s.sound?.cannon(); smoke.burst(g2.position, 4, 2); smoke.burst(new THREE.Vector3(g2.position.x + R(6), 7 + R(5), -39.6), 3, 1, 1.2); }
+    if (t > 84 && s.flagT < 0) s.flagT = t; if (s.flagT > 0) flags.forEach((f, i) => { const k = Math.min(1, (t - s.flagT - i * 2.2) / 2); if (k > 0) { f.visible = true; f.scale.y = k; } });
+  };
+  return s;
 }
 
 export function buildCity() {
