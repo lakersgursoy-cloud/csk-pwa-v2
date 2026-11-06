@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { advance, initialState, currentCharacter } from './story.js';
 import { CHAPTERS } from './chapters.js';
 import * as T from './textures.js';
-import { buildMuseum, buildSiege, buildCity, buildParis, figure, glow, box, makeHand, makeItem } from './worlds.js';
+import { buildMuseum, buildSiege, buildCity, buildParis, glow, box, makeHand, makeItem } from './worlds.js';
+import { loadKit, makeActor } from './actors.js';
 import { Panel } from './ui.js';
 import { Sound } from './audio.js';
 
@@ -12,13 +13,16 @@ const save = (v) => { try { localStorage.setItem('muze-v1', JSON.stringify(v)); 
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor'); renderer.xr.setFoveation(1);
 document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 400), rig = new THREE.Group();
 camera.position.y = 1.62; rig.add(camera); scene.add(rig);
+await loadKit();
 const museum = buildMuseum(), worlds = { museum, siege: buildSiege(), city: buildCity(), paris: buildParis() }, sound = new Sound();
 for (const w of Object.values(worlds)) { scene.add(w.group); w.group.visible = false; }
+$('masa').disabled = false; $('masa').textContent = 'Ekranda Dene'; $('vr').textContent = "VR'a Gir";
 const lit = (o) => new THREE.MeshLambertMaterial(o);
 let world = museum, state = initialState(), mode = load().mode === 'akici' ? 'akici' : 'isinlanma', busy = false, time = 0, bounds = museum.bounds, floorY = 0;
 const saved = load(); if (saved.done) state.done = saved.done;
@@ -60,9 +64,9 @@ Object.keys(CHAPTERS).forEach(hasTrophy);
 const traces = {};
 for (const [cid, ch] of Object.entries(CHAPTERS)) {
   traces[cid] = Object.entries(ch.characters).map(([id, c], i) => {
-    const [x, z] = ch.traces[i], g = new THREE.Group(), f = figure(c), hl = glow(2.4, '170,210,255'), plate = new Panel(1.5, .24, { size: 62 }).set(c.label);
+    const [x, z] = ch.traces[i], g = new THREE.Group(), act = makeActor(c), f = act.root, hl = glow(2.4, '170,210,255'), plate = new Panel(1.5, .24, { size: 62 }).set(c.label);
     g.position.set(x, 0, z); f.rotation.y = Math.atan2(ch.arrive.at[0] - x, ch.arrive.at[1] - z); hl.position.y = 1.05; plate.position.y = 2.15; g.add(f, hl, plate);
-    const hit = new THREE.Mesh(new THREE.SphereGeometry(.85, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1; g.add(hit); worlds[ch.world].group.add(g); g.visible = false;
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(.85, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 1; g.add(hit); worlds[ch.world].group.add(g); g.visible = false; worlds[ch.world].actors.push(act);
     on(hit, c.label, () => memoryShift(id), () => state.stage === 'traveller' && state.chapter === cid && !busy);
     return { id, g, hl, plate, f };
   });
@@ -95,7 +99,7 @@ function setupProps(c) {
 
 function go(event, payload) { const prev = state; state = advance(state, event, payload); if (event !== 'listen' && state !== prev) enter(state.stage); }
 function setWorld(w, x, z, faceX, faceZ, y = 0, b = w.bounds) {
-  world = w; bounds = b; floorY = y; for (const v of Object.values(worlds)) v.group.visible = v === w; scene.fog = w.fog; scene.background = new THREE.Color(w.bg);
+  world = w; bounds = b; floorY = y; renderer.shadowMap.needsUpdate = true; for (const v of Object.values(worlds)) v.group.visible = v === w; scene.fog = w.fog; scene.background = new THREE.Color(w.bg);
   const yaw = Math.atan2(x - faceX, z - faceZ);
   if (renderer.xr.isPresenting) { // Başın odadaki konumu ve yönü hesaba katılır; oyuncu tam hedef noktaya, hedefe bakarak gelir.
     const local = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y; rig.rotation.y = yaw - local;
@@ -259,4 +263,5 @@ $('vr').onclick = () => begin(true).catch(e => { $('giris').hidden = false; $('b
 navigator.xr?.isSessionSupported('immersive-vr').then(ok => { $('vr').disabled = !ok; if (!ok) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.'; }).catch(() => {});
 if (!navigator.xr) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.';
 
+renderer.shadowMap.needsUpdate = true;
 if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, get said() { return lastSay; }, items, rig, camera, renderer, prop, tunnel, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };

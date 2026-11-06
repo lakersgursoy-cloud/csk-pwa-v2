@@ -9,7 +9,7 @@ export const CHAPTERS = {
     closing: 'Kuşatma 6 Nisan’da başladı. Son saldırı 29 Mayıs gece yarısından sonra geldi ve şehir o gün düştü. Üç hayat, aynı gün.',
     characters: {
       topcu: {
-        label: 'Osmanlı topçu yardımcısı', robe: '#6c5236', cap: '#c9bb9e', hat: 'bork', sleeve: '#6c5236',
+        label: 'Osmanlı topçu yardımcısı', model: 'adv', robe: '#6c5236', cap: '#c9bb9e', hat: 'bork', sleeve: '#6c5236',
         world: 'siege', floorY: 0, bounds: { x: [-23, 23], z: [-24.5, 12] }, spawn: [-6.6, -1.4], face: [3, -9],
         wake: 'Gözlerini açtın. Bu eller artık senin. Usta bağırıyor: “Tapayı getir!”',
         item: { kind: 'wad', label: 'Ahşap tapa', at: [-5.2, -4.2] }, target: { label: 'Tapayı topa ver', at: [2.5, 1.2, -9.5] },
@@ -23,7 +23,7 @@ export const CHAPTERS = {
         history: 'Bu top bir günde yaklaşık yedi kez ateşlenebiliyordu. Senin kararın kuşatmanın sonucunu değiştirmedi; yalnızca Yusuf’la hikâyeni değiştirdi.',
       },
       savunmaci: {
-        label: 'Bizans savunmacısı', robe: '#4e4b53', cap: '#8d8d92', hat: 'helm', sleeve: '#4e4b53',
+        label: 'Bizans savunmacısı', model: 'king', robe: '#6b2c2c', cap: '#8d8d92', hat: 'helm', sleeve: '#4e4b53',
         world: 'siege', floorY: 13, bounds: { x: [6.5, 21.5], z: [-53.6, -50.5] }, spawn: [8, -52], face: [18, -20],
         wake: 'Surun üstündesin. Karşıda sayısız ateş yanıyor. Biri sesleniyor: “Sepeti gedikte bekliyoruz!”',
         item: { kind: 'basket', label: 'Toprak sepeti', at: [10.5, -53.3] }, target: { label: 'Sepeti gediğe boşalt', at: [19.5, 14, -50.6] },
@@ -37,7 +37,7 @@ export const CHAPTERS = {
         history: 'Aynı top, aynı an. Sur sarsıldı ve gedik gece yeniden örüldü. Senin kararın sonucu değiştirmedi; yalnızca Nikolas’la hikâyeni değiştirdi.',
       },
       esnaf: {
-        label: 'İstanbullu esnaf', robe: '#5c4a6a', cap: '#c8b48c', hat: 'bork', sleeve: '#5c4a6a',
+        label: 'İstanbullu esnaf', model: 'adv', robe: '#5c4a6a', cap: '#c8b48c', hat: 'none', sleeve: '#5c4a6a',
         world: 'city', floorY: 0, bounds: { x: [-4.2, 4.2], z: [-17, 10] }, spawn: [0, 8], face: [0, -20],
         wake: 'Fırının önündesin. Abluka yüzünden un azalıyor. Evde kızın Eleni seni bekliyor.',
         item: { kind: 'bread', label: 'Son somun', at: [-2.8, 3.6] }, target: { label: 'Ekmeği Eleni’ye ver', at: [2.6, 1.1, -8] },
@@ -61,7 +61,7 @@ export const CHAPTERS = {
     closing: 'Saat 17.00’de ateş kesildi, 17.30’da kale ele geçirildi. İçeride yedi mahkûm vardı. Üç hayat, aynı öğleden sonra.',
     characters: {
       matbaaci: {
-        label: 'Matbaa çalışanı', robe: '#3a3f4a', cap: '#2b2622', hat: 'bork', sleeve: '#3a3f4a',
+        label: 'Matbaa çalışanı', model: 'adv', robe: '#3a3f4a', cap: '#2b2622', hat: 'none', sleeve: '#3a3f4a',
         world: 'paris', floorY: 0, bounds: { x: [-14, 14], z: [-28, 11] }, spawn: [-11, 8], face: [0, -20],
         wake: 'Elin mürekkep içinde. Usta fısıldıyor: “Bunlar sabaha kadar elden ele dolaşmalı.”',
         item: { kind: 'paper', label: 'Bildiri destesi', at: [-9, 5.5] }, target: { label: 'Bildirileri hatibe ver', at: [-3.4, 1.2, -9] },
@@ -75,7 +75,7 @@ export const CHAPTERS = {
         history: 'Bildiriler kalabalığı tek başına yaratmadı ama fikirleri taşıdı. Senin kararın Bastille’i değiştirmedi; yalnızca ustanla hikâyeni değiştirdi.',
       },
       asker: {
-        label: 'Fransız Muhafızı askeri', robe: '#2d3f73', cap: '#1a1a22', hat: 'bork', sleeve: '#2d3f73',
+        label: 'Fransız Muhafızı askeri', model: 'adv', robe: '#2d3f73', cap: '#16161c', hat: 'tricorne', sleeve: '#2d3f73',
         world: 'paris', floorY: 0, bounds: { x: [-14, 14], z: [-28, 11] }, spawn: [10, -5], face: [0, -40],
         wake: 'Kışlada kalman emredildi ama buradasın. Bir yanda emir, bir yanda kalabalık.',
         item: { kind: 'box', label: 'Fişek kutusu', at: [11.5, -8.5] }, target: { label: 'Kutuyu çavuşa ver', at: [6, 1.2, -16] },
@@ -89,7 +89,7 @@ export const CHAPTERS = {
         history: 'Muhafızların bir bölümü gerçekten saldırganlara katıldı. Senin kararın kalenin kaderini değiştirmedi; yalnızca Pierre’le hikâyeni değiştirdi.',
       },
       pazarci: {
-        label: 'Pazarcı', robe: '#7a4a2a', cap: '#e4dcc8', hat: 'turban', sleeve: '#7a4a2a',
+        label: 'Pazarcı', model: 'hood', robe: '#7a4a2a', cap: '#e4dcc8', hat: 'none', sleeve: '#7a4a2a',
         world: 'paris', floorY: 0, bounds: { x: [-14, 14], z: [-28, 11] }, spawn: [6, 9], face: [0, -30],
         wake: 'Tezgâhın boş sayılır. Bugün herkes aynı şeyi soruyor: ekmek var mı?',
         item: { kind: 'bread', label: 'Sepetteki ekmek', at: [8.5, 6.2] }, target: { label: 'Ekmeği Anna’ya uzat', at: [-5, 1.1, 1] },

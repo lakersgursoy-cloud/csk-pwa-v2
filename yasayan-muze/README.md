@@ -20,7 +20,7 @@ Yusuf, Nikolas, Eleni, Pierre ve Anna kurgu kişilerdir. Tarihî olaylar ve sonu
 
 ## Henüz olmayanlar
 
-Seslendirme ve gerçekçi model, doku, animasyon. Bunlar için ses kaydı ve 3D varlıklar gerekir.
+Gerçek ses kaydı ve foto-gerçekçi modeller. Karakterler CC0 lisanslı, iskeletli düşük poligon modellerdir.
 
 ## Kontroller (Quest 3)
 
@@ -36,7 +36,7 @@ Ekranda: WASD, fare ve tıklama.
 
 ## Dosyalar
 
-`js/story.js` bölüm akışı, `js/worlds.js` sahneler, `js/main.js` girdi ve sahne yönetimi, `js/textures.js` kodla üretilen dokular ve normal haritaları, `js/audio.js` sesler. Three.js r169 ve BufferGeometryUtils `vendor/` altındadır; derleme adımı yoktur.
+`js/story.js` bölüm akışı, `js/chapters.js` hikâye metinleri, `js/actors.js` iskeletli karakterler, `js/worlds.js` sahneler, `js/main.js` girdi ve sahne yönetimi, `js/textures.js` kodla üretilen dokular ve normal haritaları, `js/audio.js` sesler. Three.js r169 ve yardımcıları `vendor/`, CC0 modeller `assets/` altındadır; derleme adımı yoktur.
 
 ```bash
 node --test yasayan-muze/tests/*.test.mjs

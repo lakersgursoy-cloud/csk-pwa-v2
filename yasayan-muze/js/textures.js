@@ -87,7 +87,7 @@ export function soft(color = '255,190,110') {
 // Tablodaki kalabalık: kapı açılırken kişiler hareket eder.
 export class CrowdPainting {
   constructor(draw, n) {
-    [this.c, this.g] = canvas(512, 768); this.draw = draw;
+    [this.c, this.g] = canvas(512, 768); const [b, bg] = canvas(512, 768); draw(bg); painterly(b, 9000, 22); this.draw = (g) => g.drawImage(b, 0, 0);
     this.t = new THREE.CanvasTexture(this.c); this.t.colorSpace = THREE.SRGBColorSpace;
     this.p = Array.from({ length: n }, () => ({ x: rnd() * 512, y: 540 + rnd() * 210, c: ['#2a1b12', '#5b2a20', '#1f2a3a', '#c9b48a'][rnd() * 4 | 0], s: 7 + rnd() * 6, ph: rnd() * 7 }));
     this.render(0, 0);
@@ -142,4 +142,41 @@ export function drawPamphlet() {
   g.fillStyle = '#2a211a'; g.textAlign = 'center'; g.font = 'bold 42px Georgia'; g.fillText('AUX ARMES', 256, 90); g.font = '24px Georgia'; g.fillText('Citoyens de Paris', 256, 135);
   g.fillRect(90, 160, 332, 3); for (let y = 190; y < 330; y += 24) g.fillRect(90, y, 332 - (y % 48), 7); g.font = '18px Georgia'; g.fillText('14 juillet 1789', 256, 360);
   return tex(c);
+}
+
+// Fırça darbeleri: düz çizimi yağlı boya tablo dokusuna çevirir.
+export function painterly(c, n = 9000, size = 16) {
+  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height).data;
+  for (let i = 0; i < n; i++) {
+    const x = rnd() * c.width | 0, y = rnd() * c.height | 0, k = (y * c.width + x) * 4, j = (rnd() - .5) * 26;
+    g.strokeStyle = `rgba(${d[k] + j},${d[k + 1] + j},${d[k + 2] + j},.75)`; g.lineWidth = 2 + rnd() * size * .4; g.lineCap = 'round';
+    const a = rnd() * .9 - .45, l = 3 + rnd() * size; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+  }
+}
+const SCENES = {
+  deniz: (g, w, h) => { const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, '#31465c'); s.addColorStop(.5, '#e0a874'); s.addColorStop(.55, '#2c4656'); s.addColorStop(1, '#10222c'); g.fillStyle = s; g.fillRect(0, 0, w, h); for (const [x, y, k] of [[.25, .52, 1], [.6, .57, 1.5], [.82, .5, .7]]) { g.fillStyle = '#1b130d'; g.beginPath(); g.moveTo(w * x - 44 * k, h * y); g.lineTo(w * x + 44 * k, h * y); g.lineTo(w * x + 30 * k, h * y + 16 * k); g.lineTo(w * x - 30 * k, h * y + 16 * k); g.fill(); g.fillRect(w * x - 2, h * y - 60 * k, 4, 60 * k); g.fillStyle = '#d9c9a4'; g.beginPath(); g.moveTo(w * x, h * y - 58 * k); g.quadraticCurveTo(w * x + 40 * k, h * y - 34 * k, w * x, h * y - 8 * k); g.fill(); } },
+  kubbe: (g, w, h) => { const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, '#2b2c4c'); s.addColorStop(.6, '#d98a50'); s.addColorStop(1, '#3a2a22'); g.fillStyle = s; g.fillRect(0, 0, w, h); g.fillStyle = '#41302e'; g.beginPath(); g.arc(w / 2, h * .62, w * .2, Math.PI, 0); g.fill(); g.fillRect(w * .2, h * .6, w * .6, h * .4); g.fillStyle = '#ffcf80'; for (let i = 0; i < 9; i++) g.fillRect(w * .26 + i * w * .055, h * .68, 6, 16); },
+  orman: (g, w, h) => { const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, '#6c8ea2'); s.addColorStop(.6, '#e2cda0'); s.addColorStop(1, '#3f4a2c'); g.fillStyle = s; g.fillRect(0, 0, w, h); g.fillStyle = '#4f5f50'; g.beginPath(); g.moveTo(0, h * .6); g.lineTo(w * .3, h * .36); g.lineTo(w * .55, h * .58); g.lineTo(w * .8, h * .42); g.lineTo(w, h * .6); g.lineTo(w, h); g.lineTo(0, h); g.fill(); g.fillStyle = '#26321f'; for (let i = 0; i < 12; i++) { const x = i * w / 11; g.beginPath(); g.moveTo(x, h * .9); g.lineTo(x + 18, h * .6 - i % 3 * 12); g.lineTo(x + 36, h * .9); g.fill(); } },
+  sur: (g, w, h) => { const s = g.createLinearGradient(0, 0, 0, h); s.addColorStop(0, '#39425a'); s.addColorStop(.55, '#c88f6a'); s.addColorStop(1, '#2a2118'); g.fillStyle = s; g.fillRect(0, 0, w, h); g.fillStyle = '#50433c'; g.fillRect(0, h * .5, w, h * .28); for (let x = 0; x < w; x += w / 5) g.fillRect(x, h * .34, w * .11, h * .4); g.fillStyle = '#6f3a2c'; for (let y = h * .54; y < h * .78; y += 22) g.fillRect(0, y, w, 4); g.fillStyle = '#17110c'; for (let i = 0; i < 26; i++) g.fillRect(i * w / 25, h * .85 + i * 3 % 18, 5, 18); },
+};
+export function sceneArt(name) {
+  const [c, g] = canvas(512, 384); SCENES[name](g, 512, 384); painterly(c, 7000, 20);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+// Cepheler: pencere, kepenk, kapı, kiriş dokuda; birkaç geometriyle dolu görünür.
+export function facade(kind, seed = 0) {
+  const [c, g] = canvas(512, 512), P = kind === 'paris', base = P ? ['#b8ac94', '#a79a84', '#c2b69e'] : ['#a58c6c', '#94806a', '#b29a78'];
+  g.fillStyle = base[seed % 3]; g.fillRect(0, 0, 512, 512); speckle(g, 512, 512, 6000, .09);
+  for (let i = 0; i < 24; i++) { g.fillStyle = `rgba(40,30,20,${rnd() * .07})`; g.beginPath(); g.ellipse(rnd() * 512, rnd() * 512, 30 + rnd() * 60, 10 + rnd() * 40, 0, 0, 7); g.fill(); }
+  const grime = g.createLinearGradient(0, 330, 0, 512); grime.addColorStop(0, 'rgba(30,22,14,0)'); grime.addColorStop(1, 'rgba(30,22,14,.5)'); g.fillStyle = grime; g.fillRect(0, 330, 512, 182);
+  if (!P) { g.fillStyle = '#6e5244'; for (let y = 372; y < 512; y += 7) g.fillRect(0, y, 512, 2); g.fillStyle = '#3a2619'; g.fillRect(0, 150, 512, 12); g.fillRect(0, 340, 512, 16); for (let x = 20; x < 512; x += 118) g.fillRect(x, 150, 11, 196); }
+  else { g.fillStyle = '#d6cbb4'; g.fillRect(0, 168, 512, 10); g.fillRect(0, 348, 512, 12); }
+  const win = (x, y, w, h) => {
+    if (P) { g.fillStyle = '#d9d0ba'; g.fillRect(x - 6, y - 6, w + 12, h + 12); } g.fillStyle = '#1b1a1c'; if (!P) { g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.fill(); } else g.fillRect(x, y, w, h);
+    g.strokeStyle = P ? '#c9bda4' : '#5a4230'; g.lineWidth = 3; g.beginPath(); g.moveTo(x + w / 2, y); g.lineTo(x + w / 2, y + h); g.moveTo(x, y + h / 2); g.lineTo(x + w, y + h / 2); g.stroke();
+    g.fillStyle = P ? ['#3d5a50', '#4e5a68'][seed % 2] : '#5e3c26'; g.fillRect(x - 21, y, 19, h); g.fillRect(x + w + 2, y, 19, h);
+  };
+  const cols = [90, 340]; for (const y of P ? [40, 200] : [40, 196]) for (const x of cols) win(x, y, 82, 110);
+  g.fillStyle = '#2b1c12'; g.fillRect(205, 372, 100, 140); g.fillStyle = '#6a4a2c'; g.fillRect(213, 380, 84, 132); g.fillStyle = '#3f2a18'; for (let x = 228; x < 297; x += 22) g.fillRect(x, 380, 3, 132);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
