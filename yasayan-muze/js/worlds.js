@@ -215,7 +215,7 @@ export function buildCity() {
   houses(g, -1, 10, -20, 7.5, walls, '#6e3a2a'); houses(g, 1, 10, -20, 7.5, walls, '#5c3226');
   g.add(box(8, 5, .4, walls[0], 0, 2.5, 13));
   // Ayasofya'nın uzak silueti: sokağın sonunda görünür
-  const dome = lam({ color: '#a3897a' }), d = new THREE.Mesh(new THREE.SphereGeometry(13, 18, 10, 0, 6.3, 0, 1.6), dome); d.position.set(0, 23, -74); d.scale.y = .62;
+  const dome = lam({ color: '#8d6f62' }), d = new THREE.Mesh(new THREE.SphereGeometry(13, 18, 10, 0, 6.3, 0, 1.6), dome); d.position.set(0, 23, -74); d.scale.y = .62;
   g.add(d, box(38, 20, 34, dome, 0, 10, -74), box(30, 3.4, 30, dome, 0, 21, -74));
   for (const k of [-1, 1]) { const hd = new THREE.Mesh(new THREE.SphereGeometry(9.5, 16, 8, 0, 6.3, 0, 1.6), dome); hd.position.set(0, 17.5, -74 + k * 15); hd.scale.y = .62; g.add(hd); for (const s of [-1, 1]) g.add(box(4, 24, 9, dome, s * 21, 12, -74 + k * 12)); }
   const glowW = lam({ color: '#ffb864', emissive: '#c07020' }); for (let i = 0; i < 24; i++) { const a = i / 24 * 6.283; g.add(box(.9, 1.4, .3, glowW, Math.sin(a) * 12.6, 23.5, -74 + Math.cos(a) * 12.6)); }
@@ -234,7 +234,7 @@ export function buildCity() {
   const smoke = makeSmoke(g, 8), light = new THREE.PointLight('#ff9550', 30, 16, 1.6); light.position.set(-3, 2.6, 5); g.add(light);
   g.add(new THREE.HemisphereLight('#c8a68a', '#2c221a', 1.2)); const sun = sunShadow(new THREE.DirectionalLight('#ffb878', 2.4), 34, 1536); sun.position.set(-24, 30, 34); sun.target.position.set(0, 0, -6); g.add(sun, sun.target);
   bakeStatic(g);
-  return { group: g, groups: [], actors, floorY: 0, fog: new THREE.Fog('#a07458', 34, 200), bg: '#3a2c2c',
+  return { group: g, groups: [], actors, floorY: 0, fog: new THREE.Fog('#a07458', 70, 320), bg: '#3a2c2c',
     climax(sound) { sound.thud(40, 2.4, 1.2, .25); smoke.burst(new THREE.Vector3(0, 11, -22), 8, 1.1); },
     reset() { smoke.clear(); },
     tick(dt, t) { runActors(actors, dt); light.intensity = 28 + Math.sin(t * 9) * 4; for (const p of people) p.userData.head.rotation.y = Math.sin(t * .6 + p.userData.phase) * .3; smoke.tick(dt); } };
