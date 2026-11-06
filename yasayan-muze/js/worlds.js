@@ -81,10 +81,12 @@ export function buildMuseum() {
   for (const s of [-1, 1]) g.add(box(.08, .5, L, stone, s * (W / 2 - .03), .25, cz));
   for (const z of [8, -1, -10]) { const beam = glow(9, '255,225,170'); beam.position.set(0, 5.2, z); beam.scale.set(4.5, 10, 1); beam.material.opacity = .08; g.add(beam); }
   // Yan duvar tabloları
+  const brassLamp = lam({ color: '#8a6a2a' });
   ['deniz', 'kubbe', 'sur', 'orman'].forEach((art, i) => {
     const tx = T.sceneArt(art);
-    const s = i % 2 ? 1 : -1, z = 8 - (i >> 1) * 9, p = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.95), new THREE.MeshBasicMaterial({ map: tx }));
-    p.position.set(s * (W / 2 - .05), 3, z); p.rotation.y = -s * Math.PI / 2; g.add(box(.06, 2.2, 2.85, gold, s * (W / 2 - .01), 3, z), p);
+    const s = i % 2 ? 1 : -1, z = 8 - (i >> 1) * 9, p = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.95), new THREE.MeshLambertMaterial({ map: tx, emissive: '#ffffff', emissiveMap: tx, emissiveIntensity: .35 }));
+    p.position.set(s * (W / 2 - .05), 3, z); p.rotation.y = -s * Math.PI / 2; g.add(box(.06, 2.2, 2.85, gold, s * (W / 2 - .01), 3, z), p, box(.08, .06, 1.2, brassLamp, s * (W / 2 - .3), 4.25, z));
+    const pl = glow(2.2, '255,225,170'); pl.position.set(s * (W / 2 - .35), 3.9, z); pl.material.opacity = .22; g.add(pl);
   });
   // Konuşan heykel
   const stA = makeActor({ model: 'king', stone: true, hat: 'none', scale: 1.18 }), statue = stA.root; statue.position.set(-3, .7, .5); statue.rotation.y = Math.PI / 2 - .1; statue.userData.head = stA.head; g.add(statue, box(1.3, .7, 1.3, stone, -3, .35, .5));
@@ -109,6 +111,14 @@ export function buildMuseum() {
   const pedestals = { istanbul: mkPedestal(1, T.drawMap()), paris: mkPedestal(-3.4, T.drawPamphlet()), ankara: mkPedestal(-7.8, T.drawGazette()), guanahani: mkPedestal(-5.4, T.drawBeads(), -3), napolyon: mkPedestal(5.4, T.drawInvite(), -3), hiroshima: mkPedestal(5.4, T.drawCrane(), 3), berlin: mkPedestal(-9.6, T.drawWallPiece(), -2.4), nyc: mkPedestal(-11, T.drawRibbon(), 1.6) };
   // Konfor levhası
   const comfort = new Panel(1.3, .46, { size: 50 }); comfort.position.set(W / 2 - .05, 1.45, 8.6); comfort.rotation.y = -Math.PI / 2; g.add(comfort);
+  // Kubbe açıklığı, banklar, kordonlar, tablo ışıkları ve başlık
+  const oculus = new THREE.Mesh(new THREE.CircleGeometry(2.6, 28), new THREE.MeshBasicMaterial({ map: T.nightSky(), fog: false })); oculus.rotation.x = Math.PI / 2; oculus.position.set(0, H - .02, .5); g.add(oculus);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.75, .18, 8, 36), gold); ring.rotation.x = Math.PI / 2; ring.position.set(0, H - .12, .5); g.add(ring);
+  const moon = new THREE.PointLight('#9fb6ff', 18, 14, 1.8); moon.position.set(0, H - 1, .5); g.add(moon);
+  const benchM = lam({ map: T.wood(3, 1) }); for (const z of [5.5, -5.5]) g.add(box(2.4, .1, .55, benchM, 0, .5, z), box(.12, .45, .5, benchM, -1.05, .25, z), box(.12, .45, .5, benchM, 1.05, .25, z));
+  const brass = lam({ color: '#b08a3a', emissive: '#2a1f08' }), ropeM = new THREE.LineBasicMaterial({ color: '#7a1f1c' });
+  for (const [x, z0, z1] of [[1.9, 2.2, -12.2], [-1.9, 2.2, -12.2]]) { const pts = []; for (let z = z0; z >= z1; z -= 2.4) { g.add(new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .95, 8), brass).translateX(x).translateY(.47).translateZ(z), new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), brass).translateX(x).translateY(.97).translateZ(z)); pts.push(new THREE.Vector3(x, .92, z)); } for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], mid = a.clone().lerp(b, .5); mid.y -= .18; g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(12)), ropeM)); } }
+  const title = new Panel(5.2, .9, { size: 70, bg: 'rgba(16,12,8,.7)' }).set('Zamanın Tanıkları', 'Yaşayan Müze'); title.position.set(0, 6.6, cz - L / 2 + .2); g.add(title);
   const lights = [[0, 6, 8, 34], [0, 6, -7, 42]].map(([x, y, z, i]) => { const l = new THREE.PointLight('#ffcf9a', i, 26, 1.6); l.position.set(x, y, z); return l; }); g.add(...lights);
   g.add(new THREE.HemisphereLight('#d6c4a8', '#2a1c14', 1.1));
   contactShadows(g, [[-3, 0, .5, 3], [3, 0, 1, 2.2], [3, 0, -3.4, 2.2], [3, 0, -7.8, 2.2], [-3, 0, -5.4, 2.2], [-3, 0, 5.4, 2.2], [3, 0, 5.4, 2.2], [-2.4, 0, -9.6, 2.2], [1.6, 0, -11, 2.2], ...Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 5.2, 0, 10 - (i >> 1) * 4.4, 1.9])]);
@@ -188,7 +198,7 @@ export function buildSiege() {
   let flashT = 0;
   const spect = buildSpectacle(g, { sky, hemi, sun, posts, smoke, fog: null, actors });
   return { group: g, groups, actors, spect, floorY: 0, fog: new THREE.Fog('#7c5a48', 30, 150), bg: '#3a2c2c',
-    climax(sound) { sound.cannon(); flash.visible = true; flashT = .18; smoke.burst(muzzle, 6, 2.4); smoke.burst(new THREE.Vector3(14, 7, -39.6), 4, 1.1, 1.3); },
+    climax(sound) { sound.cannon(muzzle); flash.visible = true; flashT = .18; smoke.burst(muzzle, 6, 2.4); smoke.burst(new THREE.Vector3(14, 7, -39.6), 4, 1.1, 1.3); },
     reset() { smoke.clear(); flash.visible = false; },
     tick(dt, t) { spect.tick(dt); runActors(actors, dt); fires.forEach((f, i) => f.scale.setScalar(2.2 + Math.sin(t * 9 + i * 2) * .3)); fireLight.intensity = 42 + Math.sin(t * 11) * 7; for (const f of people) f.userData.head.rotation.y = Math.sin(t * .7 + f.userData.phase) * .35; if (flashT > 0 && (flashT -= dt) <= 0) flash.visible = false; smoke.tick(dt); } };
 }
@@ -281,7 +291,7 @@ function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
     for (const b of banners) { const p = b.geometry.attributes.position; b.userData.x0 ??= Array.from({ length: p.count }, (_, i) => p.getX(i)); for (let i = 0; i < p.count; i++) { const x = b.userData.x0[i] + .9; p.setZ(i, Math.sin(x * 3 - t * 5) * .12 * x); } p.needsUpdate = true; }
     if (own.visible && own.scale.y < 1) own.scale.y = Math.min(1, (t - s.ownT) / 1.2 + .001);
     guns.forEach(g2 => { g2.visible = false; });
-    if (t > s.nextGun && t < 80) { s.nextGun = t + 3.6 + R(4); const g2 = guns[R(6) | 0]; g2.visible = true; s.sound?.cannon(); smoke.burst(g2.position, 4, 2); smoke.burst(new THREE.Vector3(g2.position.x + R(6), 7 + R(5), -39.6), 3, 1, 1.2); }
+    if (t > s.nextGun && t < 80) { s.nextGun = t + 3.6 + R(4); const g2 = guns[R(6) | 0]; g2.visible = true; s.sound?.cannon(g2.position); smoke.burst(g2.position, 4, 2); smoke.burst(new THREE.Vector3(g2.position.x + R(6), 7 + R(5), -39.6), 3, 1, 1.2); }
     if (t > 84 && s.flagT < 0) s.flagT = t; if (s.flagT > 0) flags.forEach((f, i) => { const k = Math.min(1, (t - s.flagT - i * 2.2) / 2); if (k > 0) { f.visible = true; f.scale.y = k; } });
   };
   return s;
@@ -452,7 +462,7 @@ export function buildNotre() {
   const main = new THREE.SpotLight('#ffe0b0', 200, 40, 1.05, .6, 1.2); main.position.set(0, 16, -9); main.target.position.set(0, 0, -15); main.castShadow = true; main.shadow.mapSize.set(1024, 1024); main.shadow.bias = -.0008; g.add(main, main.target, new THREE.HemisphereLight('#cdb898', '#2a1c14', 1.3));
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); stage.add(box(4, .22, 3.4, lam({ map: T.wood(2, 1) }), 0, 4.9, 2)); for (const [x, z] of [[-1.9, .5], [1.9, .5], [-1.9, 3.5], [1.9, 3.5]]) stage.add(box(.16, 4.9, .16, lam({ map: T.wood(1, 2) }), x, 2.45, z));
   const crown = glow(2.6, '255,220,130'); crown.visible = false; crown.position.set(0, 2.5, -15.5); g.add(crown);
-  const spect = stubSpect({ start() { stage.visible = true; crown.visible = false; }, stop() { stage.visible = false; }, tick(t, dt, s) { crown.visible = t > 45; if (t > 75 && !s.bell) { s.bell = 1; s.sound?.applause(7); s.sound?.cannon(); } if (t > 46 && !s.c1) { s.c1 = 1; s.sound?.chime(); } } });
+  const spect = stubSpect({ start() { stage.visible = true; crown.visible = false; }, stop() { stage.visible = false; }, tick(t, dt, s) { crown.visible = t > 45; if (t > 75 && !s.bell) { s.bell = 1; s.sound?.applause(7); s.sound?.cannon(new THREE.Vector3(0, 10, 40)); s.sound?.bell(8, 1.4); } if (t > 46 && !s.c1) { s.c1 = 1; s.sound?.chime(); } } });
   return { group: g, groups: gr, actors, spect, floorY: 0, fog: new THREE.Fog('#1c1410', 30, 90), bg: '#120d0a', bounds: { x: [-1.8, 1.8], z: [-8, 13] },
     climax(sound) { crown.visible = true; sound.chime(); sound.applause(6); }, reset() { crown.visible = false; spect.bell = spect.c1 = 0; },
     tick(dt, t) { spect.tick(dt); runActors(actors, dt); candles.forEach((c, i) => c.scale.setScalar(.8 + Math.sin(t * 8 + i) * .07)); } };
@@ -485,10 +495,13 @@ export function buildHiroshima() {
   const hemi = new THREE.HemisphereLight('#d6e2ea', '#6a6052', 1.5); g.add(hemi); const sun = sunShadow(new THREE.DirectionalLight('#fff4dc', 2.6), 54); sun.position.set(24, 44, -20); sun.target.position.set(0, 0, -10); g.add(sun, sun.target);
   // Hatırlama: nehirde fenerler. Her yıl yapılan anma töreninden esinlenir.
   const lanterns = new Float32Array(240); for (let i = 0; i < 80; i++) lanterns.set([-40 + Math.random() * 62, -.05, -31 + Math.random() * 5.4], i * 3); const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lanterns, 3)); const lm = new THREE.Points(lg, new THREE.PointsMaterial({ color: '#ffc880', size: .45, map: T.soft('255,255,255'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); lm.visible = false; g.add(lm);
-  const fog = new THREE.Fog('#c8d2d6', 60, 280), day = () => { before.visible = true; after.visible = false; sky.material.map = skyA; sky.material.needsUpdate = true; hemi.intensity = 1.5; sun.intensity = 2.6; lm.visible = false; fog.color.set('#c8d2d6'); fog.near = 60; fog.far = 280; }, ruin = (lamp) => { before.visible = false; after.visible = true; sky.material.map = skyB; sky.material.needsUpdate = true; hemi.intensity = lamp ? .7 : 1.05; sun.intensity = lamp ? .2 : .55; lm.visible = lamp; fog.color.set(lamp ? '#22262c' : '#7a7670'); fog.near = 24; fog.far = lamp ? 200 : 150; };
+  // Kara yağmur: patlamadan sonra şehrin bazı bölgelerine düşen radyoaktif kül yağmuru.
+  const rainN = 900, rainP = new Float32Array(rainN * 3); for (let i = 0; i < rainN; i++) rainP.set([-40 + Math.random() * 80, Math.random() * 18, -20 + Math.random() * 44], i * 3); const rainG = new THREE.BufferGeometry(); rainG.setAttribute('position', new THREE.BufferAttribute(rainP, 3));
+  const rain = new THREE.Points(rainG, new THREE.PointsMaterial({ color: '#2a2622', size: .12, transparent: true, opacity: .75, depthWrite: false })); rain.visible = false; g.add(rain);
+  const fog = new THREE.Fog('#c8d2d6', 60, 280), day = () => { rain.visible = false; before.visible = true; after.visible = false; sky.material.map = skyA; sky.material.needsUpdate = true; hemi.intensity = 1.5; sun.intensity = 2.6; lm.visible = false; fog.color.set('#c8d2d6'); fog.near = 60; fog.far = 280; }, ruin = (lamp) => { rain.visible = !lamp; before.visible = false; after.visible = true; sky.material.map = skyB; sky.material.needsUpdate = true; hemi.intensity = lamp ? .7 : 1.05; sun.intensity = lamp ? .2 : .55; lm.visible = lamp; fog.color.set(lamp ? '#22262c' : '#7a7670'); fog.near = 24; fog.far = lamp ? 200 : 150; };
   const spect = stubSpect({ start: () => ruin(true), stop: day, tick(t) { lg.attributes.position.array.forEach((_, i, a) => { if (i % 3 === 0) a[i] += .012; }); lg.attributes.position.needsUpdate = true; } });
   return { group: g, groups, actors, spect, floorY: 0, fog, bg: '#c8d2d6', toAfter() { ruin(false); }, climax() {}, reset: day,
-    tick(dt, t) { spect.tick(dt); runActors(actors, dt); n.offset.set(t * .01, t * .016); } };
+    tick(dt, t) { spect.tick(dt); runActors(actors, dt); n.offset.set(t * .01, t * .016); if (rain.visible) { const a = rainG.attributes.position.array; for (let i = 1; i < a.length; i += 3) { a[i] -= dt * 9; if (a[i] < 0) a[i] += 18; } rainG.attributes.position.needsUpdate = true; } } };
 }
 
 export function buildBerlin() {
@@ -622,7 +635,7 @@ export function buildParis() {
     if (!spect.active) return; spect.t += dt; const t = spect.t; mob.userData.uni.uT.value = t; flashes.forEach(f => { f.visible = false; });
     if (t > 31) pGuns.forEach(c => { c.visible = true; });
     if (t > spect.puff && t < 66) { spect.puff = t + 1.2 + R(1.6); smoke.burst(new THREE.Vector3(-14 + R(28), 13 + R(5), -35.2), 2, .9); spect.sound?.thud(150, .28, .3); }
-    if (t > spect.next && t < 66) { spect.next = t + 6 + R(3); const f = flashes[R(2) | 0]; f.visible = true; smoke.burst(f.position, 4, 1.8); spect.sound?.cannon(); }
+    if (t > spect.next && t < 66) { spect.next = t + 6 + R(3); const f = flashes[R(2) | 0]; f.visible = true; smoke.burst(f.position, 4, 1.8); spect.sound?.cannon(f.position); }
     if (t > 75 && !spect.dropped) { spect.dropped = true; drop = 1; cheer = 1; spect.sound?.thud(60, 1.5, 1); }
   };
   return { group: g, groups, actors, spect, floorY: 0, fog: new THREE.Fog('#aeb2ae', 34, 150), bg: '#aeb2ae',

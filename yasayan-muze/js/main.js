@@ -72,6 +72,11 @@ for (const [id, ch] of Object.entries(CHAPTERS)) {
 const hasTrophy = (id) => { museum.pedestals[id].map.visible = museum.pedestals[id].glow.visible = !!state.done[id]; museum.pedestals[id].glow.material.opacity = .3; };
 Object.keys(CHAPTERS).forEach(hasTrophy);
 
+// Kapı levhaları: dönem, karakterler ve ilerleme.
+const plaques = {};
+for (const [id, ch] of Object.entries(CHAPTERS)) { const p = new Panel(2.9, .62, { size: 40, bg: 'rgba(14,11,8,.86)' }); p.position.set(0, .62, .34); museum.doors[id].add(p); plaques[id] = p; }
+function updatePlaques() { for (const [id, ch] of Object.entries(CHAPTERS)) { const n = Object.keys(state.done[id] || {}).length, names = Object.values(ch.characters).map(c => c.label.split(' ').slice(-1)[0]); plaques[id].set(`${ch.hintAt}${ch.solemn ? ' · anma' : ''}`, `${names.join(' · ')}   ${n}/3`); } }
+updatePlaques();
 // Zaman yolcusunun gördüğü hafıza izleri: her bölüm ilk girişte kurulur.
 const traces = {};
 function ensureChapter(cid) {
@@ -148,8 +153,19 @@ function setWorld(w, x, z, faceX, faceZ, y = 0, b = w.bounds) {
   } else { rig.position.set(x, y, z); rig.rotation.y = yaw; pitch = 0; camera.rotation.x = 0; }
 }
 const hands = [], dHands = [makeHand(), makeHand()];
+// Oyuncunun bedeni: aşağı bakınca dönem kıyafeti görünür.
+const bodyMat = new THREE.MeshLambertMaterial({ color: '#6c5236', transparent: true, opacity: 0 }), bodyPts = [[.001, 1.32], [.17, 1.3], [.21, 1.1], [.19, .95], [.22, .6], [.27, .25], [.3, .02], [.001, 0]].map(([x, y]) => new THREE.Vector2(x, y));
+const body = new THREE.Mesh(new THREE.LatheGeometry(bodyPts, 14), bodyMat); body.visible = false; scene.add(body);
+function updateBody() { body.visible = bodyMat.opacity > .01; if (!body.visible) return; const h = Math.max(1.2, headPos.y - floorY - .22); body.scale.set(1, h / 1.32, 1); body.position.set(headPos.x, floorY, headPos.z); body.rotation.y = Math.atan2(headDir.x, headDir.z); }
+// Quest 3 el takibi: eklemler küreyle çizilir, kıstırma seçer.
+const jointMesh = [0, 1].map(() => { const m = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshLambertMaterial({ color: '#b98a66' }), 25); m.visible = false; m.frustumCulled = false; rig.add(m); return m; });
+const xrHands = [0, 1].map(i => { const h = renderer.xr.getHand(i); rig.add(h); h.userData.on = false; h.addEventListener('connected', e => { h.userData.on = !!e.data.hand; }); h.addEventListener('disconnected', () => { h.userData.on = false; jointMesh[i].visible = false; }); return h; });
+const jointM = new THREE.Matrix4(), jointQ = new THREE.Quaternion(), jointS = new THREE.Vector3();
+function updateXRHands() {
+  xrHands.forEach((h, i) => { const on = h.userData.on && h.joints && Object.keys(h.joints).length; jointMesh[i].visible = !!on; if (hands[i]) hands[i].visible = !on; if (!on) return; let k = 0; for (const j of Object.values(h.joints)) { if (k >= 25) break; const r = (j.jointRadius || .008) * 1.1; jointM.compose(j.position, jointQ.identity(), jointS.set(r, r, r)); jointMesh[i].setMatrixAt(k++, jointM); } jointMesh[i].instanceMatrix.needsUpdate = true; });
+}
 const allHands = () => [...hands, ...dHands];
-const setPersona = (v, color) => allHands().forEach(h => { h.userData.setPersona(v); if (color) h.userData.setSleeve(color); });
+const setPersona = (v, color) => { allHands().forEach(h => { h.userData.setPersona(v); if (color) h.userData.setSleeve(color); }); bodyMat.opacity = v ? 1 : 0; if (color && v) bodyMat.color.set(color); };
 function holdItem() { const h = renderer.xr.isPresenting ? (hands.find(x => x.parent?.visible) || hands[0]) : dHands[1]; h.add(held); held.position.set(0, .06, -.11); prop.itemGlow.visible = false; }
 
 async function openDoor(id) {
@@ -157,7 +173,7 @@ async function openDoor(id) {
   await wait(2); await fade(1, .7); ensureChapter(id); busy = false; go('door', id);
 }
 async function memoryShift(id) {
-  busy = true; say('Gözlerin kararıyor. Birinin kalbi seninkinin yerine atıyor.', 'Hafıza Geçişi', 3); sound.heartbeat();
+  busy = true; traces[state.chapter]?.find(t => t.id === id)?.f.userData.actor?.talk(2); say('Gözlerin kararıyor. Birinin kalbi seninkinin yerine atıyor.', 'Hafıza Geçişi', 3); sound.heartbeat();
   await wait(1.6); await fade(1, .9); go('touch', id); await wait(1.1); await fade(0, 1.3); busy = false;
 }
 async function replay(id) {
@@ -218,7 +234,7 @@ async function enter(stage) {
   } else if (stage === 'museum') {
     busy = true; hint(''); sound.score(null); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
     { const [px, pz] = museum.pedestals[state.chapter]?.pos ?? [3, 1]; setWorld(museum, px * .4, pz + 3, px, pz); } sound.ambient('museum');
-    for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy);
+    for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy); updatePlaques();
     await fade(0, 1); if (endNote) { say(endNote, 'Saat 00.24', 8); endNote = ''; busy = false; return; } say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
   }
 }
@@ -299,14 +315,16 @@ function animate(dt) {
     if (state.stage === 'traveller') {
       for (const f of specials) if (f.g.visible) { f.hl.material.opacity = .22 + Math.sin(time * 2.4) * .1; f.plate.lookAt(headPos); }
       traces[state.chapter].forEach(t => { t.hl.material.opacity = .16 + Math.sin(time * 3) * .07; t.plate.lookAt(headPos); });
-      world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); } });
+      world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); g[0].userData.actor?.talk(7); } });
     }
   }
-  sound.tick(dt); updateGuide(); hover.visible = false; moving = 0;
+  sound.tick(dt); updateGuide(); hover.visible = false; moving = 0; updateBody(); updateXRHands(); sound.listener(headPos, headDir);
+  // Yakındakiler sana bakar; hareketli gölgeler 5 Hz güncellenir.
+  if (world !== museum) { for (const a of world.actors || []) a.look(headPos); shadowT += dt; if (perf.level === 0 && shadowT > .2) { shadowT = 0; renderer.shadowMap.needsUpdate = true; } }
   if (renderer.xr.isPresenting) xrInput(dt); else deskInput(dt);
   tunnel.material.opacity += (moving * .85 - tunnel.material.opacity) * Math.min(1, dt * 8); tunnel.visible = tunnel.material.opacity > .01;
 }
-let statueSpoke = false;
+let statueSpoke = false, shadowT = 0;
 
 // Otomatik kalite: VR'da kare süresi uzarsa kalabalık ve yürüyen karakterler azalır.
 function applyQuality() { for (const w of Object.values(built)) w.spect?.setDensity(LEVELS[perf.level]); if (perf.level >= 1) for (const w of Object.values(built)) w.actors?.forEach(a => { if (a.path) a.root.visible = false; }); }

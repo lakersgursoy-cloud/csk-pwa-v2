@@ -22,6 +22,7 @@ export class Sound {
     const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
     s.buffer = this.noise; s.loop = true; f.type = kind === 'crowd' ? 'bandpass' : 'lowpass'; f.frequency.value = { camp: 700, crowd: 620, museum: 220, sea: 420 }[kind] ?? 220; g.gain.value = 0;
     s.connect(f).connect(g).connect(this.master); s.start();
+    if (kind === 'sea') { const lfo = this.ctx.createOscillator(), lg = this.ctx.createGain(); lfo.frequency.value = .11; lg.gain.value = .9; lfo.connect(lg).connect(g.gain); lfo.start(); }
     g.gain.setTargetAtTime({ camp: 1.4, crowd: 2.4, sea: 2.2 }[kind] ?? .5, this.ctx.currentTime, 1); this.bed = { s, g };
   }
   thud(freq = 60, dur = 1, vol = 1, delay = 0) {
@@ -41,11 +42,17 @@ export class Sound {
   pluck(f, dur, vol) { const t = this.ctx.currentTime, o = this.ctx.createOscillator(), o2 = this.ctx.createOscillator(), g = this.ctx.createGain(), lp = this.ctx.createBiquadFilter(); o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2.01; lp.type = 'lowpass'; lp.frequency.setValueAtTime(2400, t); lp.frequency.exponentialRampToValueAtTime(420, t + dur); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .012); g.gain.exponentialRampToValueAtTime(.0008, t + dur); o.connect(lp); o2.connect(lp); lp.connect(g).connect(this.master); o.start(t); o2.start(t); o.stop(t + dur); o2.stop(t + dur); }
   silence() { this.score(null); if (this.bed && this.ctx) { this.bed.g.gain.setTargetAtTime(0, this.ctx.currentTime, .08); } speechSynthesis?.cancel?.(); }
   chime() { if (!this.ctx) return; for (const [i, f] of [392, 587].entries()) { const t = this.ctx.currentTime + i * .08, o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.frequency.value = f; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + 1.2); o.connect(g).connect(this.master); o.start(t); o.stop(t + 1.2); } }
-  cannon() {
-    if (!this.ctx) return; this.thud(46, 2.4, 1.3);
+  // Konumlu ses: dinleyici her kare baş konumuyla güncellenir.
+  listener(pos, dir) { const l = this.ctx?.listener; if (!l || !l.positionX) return; const t = this.ctx.currentTime; l.positionX.setTargetAtTime(pos.x, t, .05); l.positionY.setTargetAtTime(pos.y, t, .05); l.positionZ.setTargetAtTime(pos.z, t, .05); l.forwardX.setTargetAtTime(dir.x, t, .05); l.forwardY.setTargetAtTime(0, t, .05); l.forwardZ.setTargetAtTime(dir.z, t, .05); }
+  panner(pos) { const p = this.ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 6; p.maxDistance = 400; p.rolloffFactor = .8; p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z; p.connect(this.master); return p; }
+  cannon(pos) {
+    if (!this.ctx) return; const out = pos ? this.panner(pos) : this.master; this.thud(46, 2.4, 1.3);
     const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime;
     s.buffer = this.noise; f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(90, t + 1.8);
-    g.gain.setValueAtTime(9, t); g.gain.exponentialRampToValueAtTime(.001, t + 1.9); s.connect(f).connect(g).connect(this.master); s.start(t); s.stop(t + 2);
+    g.gain.setValueAtTime(pos ? 14 : 9, t); g.gain.exponentialRampToValueAtTime(.001, t + 1.9); s.connect(f).connect(g).connect(out); s.start(t); s.stop(t + 2);
     this.thud(70, .9, .6, 1.7);
+  }
+  bell(times = 6, gap = 1.6) {
+    if (!this.ctx) return; for (let k = 0; k < times; k++) { const t0 = this.ctx.currentTime + k * gap; for (const [r, v, d] of [[1, .14, 3.2], [2.4, .05, 2], [3.1, .04, 1.6], [.5, .06, 3.6]]) { const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.frequency.value = 220 * r; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + .01); g.gain.exponentialRampToValueAtTime(.0005, t0 + d); o.connect(g).connect(this.master); o.start(t0); o.stop(t0 + d); } }
   }
 }

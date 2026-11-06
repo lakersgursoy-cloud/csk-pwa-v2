@@ -70,12 +70,24 @@ export function makeActor({ model = 'adv', robe = '#6c5236', cap = '#c9bb9e', ha
     const h = hatMesh(hat, stone ? '#c9c3b6' : cap), q = a.head.getWorldQuaternion(new THREE.Quaternion()).invert(), sw = a.head.getWorldScale(new THREE.Vector3()).x;
     h.quaternion.copy(q); h.position.set(0, (base.headTop - .015) * scale / sw, 0).applyQuaternion(q); h.scale.setScalar(scale / sw); a.head.add(h); h.traverse(o => { if (o.isMesh && stone) o.material = stoneM; });
   }
+  // Yakındaki oyuncuya bakma ve konuşurken baş hareketi. Animasyonun üstüne eklenir.
+  const _fwd = new THREE.Vector3(), _cur = new THREE.Vector3(), _want = new THREE.Vector3(), _hp = new THREE.Vector3(), _pq = new THREE.Quaternion(), _wq = new THREE.Quaternion(), _d = new THREE.Quaternion(), _id = new THREE.Quaternion(), _side = new THREE.Vector3();
+  const fwdLocal = a.head ? _fwd.set(0, 0, 1).applyQuaternion(root.quaternion).applyQuaternion(a.head.getWorldQuaternion(new THREE.Quaternion()).invert()).clone() : null;
+  a.lookW = 0; a.talkT = 0; a.lookTarget = null; a.talk = (s) => { a.talkT = s; };
+  a.look = (target) => { a.lookTarget = target; };
+  const applyHead = (dt) => {
+    const h = a.head; if (!h || !fwdLocal) return; h.getWorldPosition(_hp); h.getWorldQuaternion(_wq); h.parent.getWorldQuaternion(_pq);
+    let want = 0; if (a.lookTarget) { _want.copy(a.lookTarget).sub(_hp); const dist = _want.length(); _want.normalize(); _cur.copy(fwdLocal).applyQuaternion(_wq); const dot = _cur.dot(_want); if (dist < 7 && dot > .1) want = 1; }
+    a.lookW += (want - a.lookW) * Math.min(1, dt * 3);
+    if (a.lookW > .01) { _cur.copy(fwdLocal).applyQuaternion(_wq); _d.setFromUnitVectors(_cur, _want); const ang = 2 * Math.acos(Math.min(1, Math.abs(_d.w))), k = Math.min(1, 1.05 / Math.max(ang, 1e-4)) * a.lookW; _d.slerp(_id, 1 - k); _pq.invert(); h.quaternion.premultiply(_pq.clone().multiply(_d).multiply(_pq.clone().invert())); }
+    if (a.talkT > 0) { a.talkT -= dt; _cur.copy(fwdLocal).applyQuaternion(_wq); _side.crossVectors(new THREE.Vector3(0, 1, 0), _cur).normalize(); _d.setFromAxisAngle(_side, Math.sin(performance.now() * .011) * .05 + Math.sin(performance.now() * .0037) * .03); h.parent.getWorldQuaternion(_pq).invert(); h.quaternion.premultiply(_pq.clone().multiply(_d).multiply(_pq.clone().invert())); }
+  };
   a.patrol = (pts, speed = 1.15) => { a.path = pts; a.seg = 0; a.speed = speed; root.position.set(pts[0][0], 0, pts[0][1]); a.play('Walk', 0); };
   a.update = (dt) => {
     if (a.path) { const [tx, tz] = a.path[(a.seg + 1) % a.path.length], dx = tx - root.position.x, dz = tz - root.position.z, d = Math.hypot(dx, dz); if (d < .1) a.seg = (a.seg + 1) % a.path.length; else { root.position.x += dx / d * a.speed * dt; root.position.z += dz / d * a.speed * dt; let e = Math.atan2(dx, dz) - root.rotation.y; e = Math.atan2(Math.sin(e), Math.cos(e)); root.rotation.y += e * Math.min(1, dt * 4); } }
-    mixer?.update(dt);
+    mixer?.update(dt); if (mixer) applyHead(dt);
   };
-  return a;
+  root.userData.actor = a; return a;
 }
 
 // Kalabalık atlası: iskeletli karakterlerin yürüme kareleri dokuya çizilir. Her kişi iki üçgendir.

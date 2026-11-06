@@ -24,6 +24,9 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Notre-Dame 1804, Hiroşima 1945, Berlin 1989, New York 2001: üçer karakter ve birer izleme sahnesi
 - Hiroşima ve New York’ta saldırı anı gösterilmez, saldırganlar oynanmaz, başlangıçta uyarı vardır
 - Gerçek karakter karelerinden üretilen kalabalıklar, CC0 fotoğraf gökyüzü, döneme özgü üretken müzik, hedef yönlendirme oku
+- Aşağı bakınca görünen dönem kıyafeti, Quest 3 el takibi (kıstırarak seçme), sana bakan ve konuşurken baş hareketi yapan karakterler
+- Hareketli gölgeler, konumlu top sesi, dalga ve çan sesleri, Hiroşima’da kara yağmur
+- Müzede kapı levhaları (karakterler ve ilerleme), kubbe açıklığı, banklar, kordonlar
 - Y/B tuşu veya ekranda M ile her an müzeye dönüş
 - Ankara 1923: telgraf memuru, Meclis kâtibi, öğretmen Ayşe; Cumhuriyet Gecesi izleme sahnesi
 
