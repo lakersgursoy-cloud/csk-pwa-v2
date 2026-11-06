@@ -12,6 +12,7 @@ const NEXT = {
 
 export function advance(state, event, payload) {
   const { stage } = state;
+  if (event === 'abort') return stage === 'museum' ? state : { ...state, stage: 'museum', character: null, choice: null };
   if (stage === 'museum' && event === 'door') {
     if (!CHAPTERS[payload]) return state;
     return { ...state, stage: 'traveller', chapter: payload, character: null, choice: null, listened: [] };

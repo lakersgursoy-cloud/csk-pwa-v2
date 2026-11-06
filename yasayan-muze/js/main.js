@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { advance, initialState, currentCharacter } from './story.js';
 import { CHAPTERS } from './chapters.js';
 import * as T from './textures.js';
-import { buildMuseum, buildSiege, buildCity, buildParis, buildAnkara, buildMeclis, buildIsland, buildDeck, glow, box, makeHand, makeItem } from './worlds.js';
+import { buildMuseum, buildSiege, buildCity, buildParis, buildAnkara, buildMeclis, buildIsland, buildDeck, buildNotre, buildHiroshima, buildBerlin, buildNYC, glow, box, makeHand, makeItem } from './worlds.js';
 import { loadKit, makeActor } from './actors.js';
 import { Panel } from './ui.js';
 import { Sound } from './audio.js';
@@ -17,11 +17,15 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor'); renderer.xr.setFoveation(1);
 document.body.prepend(renderer.domElement);
 
-const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 400), rig = new THREE.Group();
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 800), rig = new THREE.Group();
 camera.position.y = 1.62; rig.add(camera); scene.add(rig);
+const perf = { t: 0, n: 0, level: 0 }, LEVELS = [1, .6, .35, .2];
 await loadKit();
-const museum = buildMuseum(), worlds = { museum, siege: buildSiege(), city: buildCity(), paris: buildParis(), ankara: buildAnkara(), meclis: buildMeclis(), island: buildIsland(), deck: buildDeck() }, sound = new Sound();
-for (const w of Object.values(worlds)) { scene.add(w.group); w.group.visible = false; }
+const museum = buildMuseum(), built = { museum }, BUILD = { siege: buildSiege, city: buildCity, paris: buildParis, ankara: buildAnkara, meclis: buildMeclis, island: buildIsland, deck: buildDeck, notre: buildNotre, hiroshima: buildHiroshima, berlin: buildBerlin, nyc: buildNYC };
+// Dünyalar kapıya girildiğinde kurulur; Quest'te açılış ve bellek hafif kalır.
+const worlds = new Proxy(built, { get(t, k) { if (!(k in t) && BUILD[k]) { const w = BUILD[k](); t[k] = w; scene.add(w.group); w.group.visible = false; w.spect?.setDensity(LEVELS[perf.level]); renderer.compile?.(scene, camera); } return t[k]; } });
+const sound = new Sound();
+scene.add(museum.group); museum.group.visible = false;
 $('masa').disabled = false; $('masa').textContent = 'Ekranda Dene'; $('vr').textContent = "VR'a Gir";
 const lit = (o) => new THREE.MeshLambertMaterial(o);
 let world = museum, state = initialState(), mode = load().mode === 'akici' ? 'akici' : 'isinlanma', busy = false, time = 0, bounds = museum.bounds, floorY = 0;
@@ -60,9 +64,10 @@ for (const [id, ch] of Object.entries(CHAPTERS)) {
 const hasTrophy = (id) => { museum.pedestals[id].map.visible = museum.pedestals[id].glow.visible = !!state.done[id]; museum.pedestals[id].glow.material.opacity = .3; };
 Object.keys(CHAPTERS).forEach(hasTrophy);
 
-// Zaman yolcusunun gördüğü hafıza izleri
+// Zaman yolcusunun gördüğü hafıza izleri: her bölüm ilk girişte kurulur.
 const traces = {};
-for (const [cid, ch] of Object.entries(CHAPTERS)) {
+function ensureChapter(cid) {
+  if (traces[cid]) return; const ch = CHAPTERS[cid];
   traces[cid] = Object.entries(ch.characters).map(([id, c], i) => {
     const [x, z] = ch.traces[i], g = new THREE.Group(), act = makeActor(c), f = act.root, hl = glow(2.4, '170,210,255'), plate = new Panel(1.5, .24, { size: 62 }).set(c.label);
     g.position.set(x, 0, z); f.rotation.y = Math.atan2(ch.arrive.at[0] - x, ch.arrive.at[1] - z); hl.position.y = 1.05; plate.position.y = 2.15; g.add(f, hl, plate);
@@ -70,6 +75,8 @@ for (const [cid, ch] of Object.entries(CHAPTERS)) {
     on(hit, c.label, () => memoryShift(id), () => state.stage === 'traveller' && state.chapter === cid && !busy);
     return { id, g, hl, plate, f };
   });
+  specials.push(specialTrace(cid, ch.spectacle.label, ch.spectacle.actor, ...ch.spectacle.traceAt, ch.spectacle.traceRy, 'watch'));
+  if (ch.assault) { specials.push(specialTrace(cid, ch.assault.label, { robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork' }, -6.5, -20.4, 1.3, 'climb')); worlds.siege.group.add(climbGlow, climbHit); }
 }
 // 1453 kapısındaki iki özel giriş: Fatih'in Gözünden ve Son Dalga.
 function specialTrace(chapter, label, actorOpts, x, z, ry, event) {
@@ -78,10 +85,10 @@ function specialTrace(chapter, label, actorOpts, x, z, ry, event) {
   on(hit, label, async () => { busy = true; sound.heartbeat(); await fade(1, 1.2); busy = false; go(event); }, () => state.stage === 'traveller' && state.chapter === chapter && !busy);
   return f;
 }
-const specials = [...Object.entries(CHAPTERS).map(([id, c]) => specialTrace(id, c.spectacle.label, c.spectacle.actor, ...c.spectacle.traceAt, c.spectacle.traceRy, 'watch')), specialTrace('istanbul', CHAPTERS.istanbul.assault.label, { robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork' }, -6.5, -20.4, 1.3, 'climb')];
+const specials = [];
 const showSpecials = (cid) => specials.forEach(f => { f.g.visible = f.chapter === cid; });
 // Tırmanış adımları tek bir hedefle ilerler.
-const climbGlow = glow(.42, '255,215,130'), climbHit = new THREE.Mesh(new THREE.SphereGeometry(.42, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); climbGlow.visible = climbHit.visible = false; worlds.siege.group.add(climbGlow, climbHit);
+const climbGlow = glow(.42, '255,215,130'), climbHit = new THREE.Mesh(new THREE.SphereGeometry(.42, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); climbGlow.visible = climbHit.visible = false;
 const climb = { step: 0, it: null };
 const CLIMB = [
   { at: [3, 1, -35.4], to: [3, 0, -37.9, 0] },
@@ -116,9 +123,16 @@ function setupProps(c) {
   itemOn.label = c.item.label; targetOn.label = c.target.label; climaxOn.label = c.climax.label; trophyOn.label = CHAPTERS[state.chapter].trophy.name;
 }
 
+// Her yerden müzeye dönüş: Y/B tuşu ya da ekranda M.
+function abort() {
+  if (state.stage === 'museum') return; token++; timers.length = 0; fadeJob = null; busy = false;
+  for (const w of Object.values(built)) if (w.spect?.active) w.spect.stop(); for (const w of Object.values(built)) if (w !== museum) w.reset?.();
+  choiceUi.forEach(p => { p.visible = false; }); held?.parent?.remove(held); prop.group.parent?.remove(prop.group); climbGlow.visible = climbHit.visible = false; veil.material.color.set('#000'); sub.visible = false; subT = 0;
+  state = advance(state, 'abort'); endNote = 'Müzeye döndün.'; enter('museum');
+}
 function go(event, payload) { const prev = state; state = advance(state, event, payload); if (event !== 'listen' && state !== prev) enter(state.stage); }
 function setWorld(w, x, z, faceX, faceZ, y = 0, b = w.bounds) {
-  world = w; bounds = b; floorY = y; renderer.shadowMap.needsUpdate = true; for (const v of Object.values(worlds)) v.group.visible = v === w; scene.fog = w.fog; scene.background = new THREE.Color(w.bg);
+  world = w; bounds = b; floorY = y; renderer.shadowMap.needsUpdate = true; for (const v of Object.values(built)) v.group.visible = v === w; scene.fog = w.fog; scene.background = new THREE.Color(w.bg);
   const yaw = Math.atan2(x - faceX, z - faceZ);
   if (renderer.xr.isPresenting) { // Başın odadaki konumu ve yönü hesaba katılır; oyuncu tam hedef noktaya, hedefe bakarak gelir.
     const local = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y; rig.rotation.y = yaw - local;
@@ -131,8 +145,8 @@ const setPersona = (v, color) => allHands().forEach(h => { h.userData.setPersona
 function holdItem() { const h = renderer.xr.isPresenting ? (hands.find(x => x.parent?.visible) || hands[0]) : dHands[1]; h.add(held); held.position.set(0, .06, -.11); prop.itemGlow.visible = false; }
 
 async function openDoor(id) {
-  busy = true; const d = museum.doors[id].userData, ch = CHAPTERS[id]; sound.chime(); d.motion = 1; say('Tablodaki kalabalık hareket etmeye başladı.', ch.year, 3);
-  await wait(2); await fade(1, .7); busy = false; go('door', id);
+  busy = true; const d = museum.doors[id].userData, ch = CHAPTERS[id]; if (ch.notice) { say(ch.notice, 'Uyarı', 7); await wait(7); } sound.chime(); d.motion = 1; say('Tablodaki kalabalık hareket etmeye başladı.', ch.year, 3);
+  await wait(2); await fade(1, .7); ensureChapter(id); busy = false; go('door', id);
 }
 async function memoryShift(id) {
   busy = true; say('Gözlerin kararıyor. Birinin kalbi seninkinin yerine atıyor.', 'Hafıza Geçişi', 3); sound.heartbeat();
@@ -185,7 +199,8 @@ async function enter(stage) {
   } else if (stage === 'climax') {
     prop.climaxGlow.visible = true; say(c.climax.text, c.label, 8); hint(`${c.climax.label}.`);
   } else if (stage === 'aftermath') {
-    busy = true; hint(''); prop.climaxGlow.visible = false; worlds[c.world].climax(sound); pulse(1, 260); await wait(3.5);
+    busy = true; hint(''); prop.climaxGlow.visible = false;
+    if (ch.solemn) { const w = worlds[c.world]; sound.silence(); veil.material.color.set(ch.world === 'hiroshima' ? '#fff' : '#000'); await fade(1, ch.world === 'hiroshima' ? .15 : 2.2); w.toAfter(); await wait(5); await fade(0, 4); veil.material.color.set('#000'); } else { worlds[c.world].climax(sound); pulse(1, 260); await wait(3.5); }
     say(c.history, 'Tarih', 9); await wait(9); prop.trophy.visible = true; prop.itemGlow.visible = true; prop.itemGlow.position.copy(prop.trophy.position); say(`${ch.trophy.name} burada duruyor.`, c.label, 6); busy = false; hint('Nesneyi al.');
   } else if (stage === 'finale') {
     busy = true; prop.group.parent?.remove(prop.group); await fade(1, 1); setPersona(false, '#264a66'); setWorld(worlds[ch.world], ...ch.arrive.at, ...ch.arrive.face); await fade(0, 1.2);
@@ -194,7 +209,7 @@ async function enter(stage) {
     say(ch.closing, 'Tarih', 9); await wait(9); busy = false; go('finish');
   } else if (stage === 'museum') {
     busy = true; hint(''); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
-    { const [px, pz] = { istanbul: [3, 1], paris: [3, -3.4], ankara: [3, -7.8], guanahani: [-3, -5.4] }[state.chapter] ?? [3, 1]; setWorld(museum, px * .4, pz + 3, px, pz); } sound.ambient('museum');
+    { const [px, pz] = museum.pedestals[state.chapter]?.pos ?? [3, 1]; setWorld(museum, px * .4, pz + 3, px, pz); } sound.ambient('museum');
     for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy);
     await fade(0, 1); if (endNote) { say(endNote, 'Saat 00.24', 8); endNote = ''; busy = false; return; } say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
   }
@@ -227,7 +242,7 @@ for (let i = 0; i < 2; i++) {
 dHands.forEach((h, i) => { h.position.set(i ? .22 : -.22, -.3, -.42); h.rotation.set(.55, i ? .3 : -.3, 0); h.visible = false; camera.add(h); });
 const O = new THREE.Vector3(), D = new THREE.Vector3();
 const keys = {}; let pitch = 0, deskHover = null;
-addEventListener('keydown', e => { keys[e.code] = true; }); addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'KeyM') abort(); }); addEventListener('keyup', e => { keys[e.code] = false; });
 renderer.domElement.addEventListener('click', () => { if (renderer.xr.isPresenting) return; if (deskHover) deskHover.it.fn(); else if (document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
 addEventListener('mousemove', e => { if (document.pointerLockElement !== renderer.domElement) return; rig.rotation.y -= e.movementX * .0022; pitch = THREE.MathUtils.clamp(pitch - e.movementY * .0022, -1.2, 1.2); camera.rotation.x = pitch; });
 addEventListener('resize', () => { if (renderer.xr.isPresenting) return; camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
@@ -251,6 +266,7 @@ function xrInput(dt) {
       else if (st.aiming) { st.aiming = false; head(); rig.position.x += marker.position.x - headPos.x; rig.position.z += marker.position.z - headPos.z; }
     }
     if (!isLeft) { if (Math.abs(x) > .7 && !st.turned) { st.turned = true; head(); const a = x > 0 ? -Math.PI / 6 : Math.PI / 6, dx = rig.position.x - headPos.x, dz = rig.position.z - headPos.z, c = Math.cos(a), s = Math.sin(a); rig.rotation.y += a; rig.position.x = headPos.x + dx * c + dz * s; rig.position.z = headPos.z - dx * s + dz * c; } if (Math.abs(x) < .3) st.turned = false; }
+    const q = g.buttons[5]?.pressed; if (q && !st.wasB) abort(); st.wasB = q;
     const a = g.buttons[4]?.pressed; if (a && !st.was) { mode = mode === 'akici' ? 'isinlanma' : 'akici'; save({ ...load(), mode }); tick(); say(`Hareket: ${mode === 'akici' ? 'Akıcı' : 'Işınlanma'}`, null, 2); } st.was = a;
   }
 }
@@ -285,8 +301,7 @@ function animate(dt) {
 let statueSpoke = false;
 
 // Otomatik kalite: VR'da kare süresi uzarsa kalabalık ve yürüyen karakterler azalır.
-const perf = { t: 0, n: 0, level: 0 }, LEVELS = [1, .6, .35, .2];
-function applyQuality() { for (const w of Object.values(worlds)) w.spect?.setDensity(LEVELS[perf.level]); if (perf.level >= 1) for (const w of Object.values(worlds)) w.actors?.forEach(a => { if (a.path) a.root.visible = false; }); }
+function applyQuality() { for (const w of Object.values(built)) w.spect?.setDensity(LEVELS[perf.level]); if (perf.level >= 1) for (const w of Object.values(built)) w.actors?.forEach(a => { if (a.path) a.root.visible = false; }); }
 function watchPerf(raw) { if (!renderer.xr.isPresenting || fadeJob) { perf.t = perf.n = 0; return; } perf.t += raw; perf.n++; if (perf.t < 2.5) return; const avg = perf.t / perf.n; perf.t = perf.n = 0; if (avg > 1 / 58 && perf.level < LEVELS.length - 1) { perf.level++; applyQuality(); } }
 const clock = new THREE.Clock(), SPEED = TEST ? +(new URLSearchParams(location.search).get('hiz') || 1) : 1;
 renderer.setAnimationLoop(() => { const raw = clock.getDelta(); watchPerf(raw); const dt = Math.min(raw, .1) * SPEED; animate(dt); renderer.render(scene, camera); });
@@ -307,4 +322,4 @@ navigator.xr?.isSessionSupported('immersive-vr').then(ok => { $('vr').disabled =
 if (!navigator.xr) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.';
 
 renderer.shadowMap.needsUpdate = true;
-if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, perf, climb, get said() { return lastSay; }, items, rig, camera, renderer, prop, tunnel, worlds, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };
+if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, perf, climb, abort, built, get said() { return lastSay; }, items, rig, camera, renderer, prop, tunnel, worlds, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };

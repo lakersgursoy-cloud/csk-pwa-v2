@@ -21,6 +21,9 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Cihazda Türkçe ses varsa metinleri okuyan anlatıcı; yoksa altyazı
 
 - Guanahani 1492: Pinta gemicisi, Lukayo balıkçısı, yazman yardımcısı; İlk Karşılaşma izleme sahnesi
+- Notre-Dame 1804, Hiroşima 1945, Berlin 1989, New York 2001: üçer karakter ve birer izleme sahnesi
+- Hiroşima ve New York’ta saldırı anı gösterilmez, saldırganlar oynanmaz, başlangıçta uyarı vardır
+- Y/B tuşu veya ekranda M ile her an müzeye dönüş
 - Ankara 1923: telgraf memuru, Meclis kâtibi, öğretmen Ayşe; Cumhuriyet Gecesi izleme sahnesi
 
 Yusuf, Nikolas, Eleni, Pierre, Anna, Ayşe, Zehra ve Pedro kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.

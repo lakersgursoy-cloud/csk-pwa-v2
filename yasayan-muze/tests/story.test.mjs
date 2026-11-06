@@ -59,3 +59,15 @@ test('Yeniçeri bölümü yalnızca İstanbul’da açılır ve kayıt değişti
   s = advance(s, 'climbDone'); assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {});
   const a = CHAPTERS.istanbul.assault; assert.equal(new Set(a.steps.map(x => x.label)).size, a.steps.length);
 });
+test('Her an müzeye dönülür, kayıt bozulmaz', () => {
+  let s = run(initialState(), [['door', 'hiroshima'], ['touch', 'hemsire'], ['takeItem'], ['abort']]);
+  assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {}); assert.equal(s.chapter, 'hiroshima');
+  assert.equal(advance(initialState(), 'abort').stage, 'museum');
+});
+test('Ağır bölümlerde uyarı var, saldırıyı yapan biri oynanamaz', () => {
+  for (const id of ['hiroshima', 'nyc']) {
+    const c = CHAPTERS[id]; assert.ok(c.solemn && c.notice);
+    for (const k of Object.values(c.characters)) assert.ok(!/pilot|bombard|korsan|mürettebat/i.test(k.label));
+  }
+});
+test('Her bölümün yılı benzersizdir', () => { const y = Object.values(CHAPTERS).map(c => c.year); assert.equal(new Set(y).size, y.length); });
