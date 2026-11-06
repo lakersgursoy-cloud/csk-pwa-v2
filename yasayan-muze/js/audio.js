@@ -20,9 +20,9 @@ export class Sound {
     if (!this.ctx) return;
     if (this.bed) { const o = this.bed; o.g.gain.setTargetAtTime(0, this.ctx.currentTime, .4); setTimeout(() => o.s.stop(), 1500); this.bed = null; }
     const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
-    s.buffer = this.noise; s.loop = true; f.type = kind === 'crowd' ? 'bandpass' : 'lowpass'; f.frequency.value = { camp: 700, crowd: 620, museum: 220 }[kind] ?? 220; g.gain.value = 0;
+    s.buffer = this.noise; s.loop = true; f.type = kind === 'crowd' ? 'bandpass' : 'lowpass'; f.frequency.value = { camp: 700, crowd: 620, museum: 220, sea: 420 }[kind] ?? 220; g.gain.value = 0;
     s.connect(f).connect(g).connect(this.master); s.start();
-    g.gain.setTargetAtTime({ camp: 1.4, crowd: 2.4 }[kind] ?? .5, this.ctx.currentTime, 1); this.bed = { s, g };
+    g.gain.setTargetAtTime({ camp: 1.4, crowd: 2.4, sea: 2.2 }[kind] ?? .5, this.ctx.currentTime, 1); this.bed = { s, g };
   }
   thud(freq = 60, dur = 1, vol = 1, delay = 0) {
     if (!this.ctx) return; const t = this.ctx.currentTime + delay, o = this.ctx.createOscillator(), g = this.ctx.createGain();

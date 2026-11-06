@@ -53,7 +53,7 @@ const RECOLOR = {
 export function makeActor({ model = 'adv', robe = '#6c5236', cap = '#c9bb9e', hat = 'bork', hair = '#3a2a1e', scale = 1, anim = 'Idle_Neutral', stone = false }) {
   const base = kit.models[model], root = new THREE.Group(), rig = cloneSkinned(base.scene), map = RECOLOR[model](robe, hair), cache = {}, stoneM = stone && new THREE.MeshLambertMaterial({ color: '#c9c3b6' });
   const convert = (m) => {
-    if (stone) return stoneM;
+    if (stone) { if (m.name !== 'Gold') return stoneM; const h = stoneM.clone(); h.visible = false; return h; }
     if (cache[m.name]) return cache[m.name]; const n = new THREE.MeshLambertMaterial({ color: m.color, flatShading: false, name: m.name });
     if (map[m.name]) n.color.set(map[m.name]); if (m.name === 'Gold' || (model === 'hood' && m.name === 'Metal')) n.visible = false; return (cache[m.name] = n);
   };

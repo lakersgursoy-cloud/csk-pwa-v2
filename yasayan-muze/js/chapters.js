@@ -1,4 +1,4 @@
-// Bölüm içeriği. Yusuf, Eleni, Anna, Ayşe, Zehra gibi kişiler kurgudur; tarihî olay ve sonuçlar değişmez.
+// Bölüm içeriği. Yusuf, Eleni, Anna, Ayşe, Zehra, Pedro gibi kişiler kurgudur; tarihî olay ve sonuçlar değişmez.
 export const CHAPTERS = {
   istanbul: {
     year: '1453', place: 'İstanbul', world: 'siege', hintAt: 'Mayıs 1453',
@@ -76,6 +76,72 @@ export const CHAPTERS = {
         },
         climax: { label: 'Gökyüzüne bak', at: [0, 1.5, -11], text: 'Yer titremeye başladı. Çatıların üstüne bak.' },
         history: 'Bir topun sesi şehrin her sokağına ulaşıyordu. Senin kararın kuşatmayı değiştirmedi; yalnızca Eleni’yle geçirdiğin geceyi değiştirdi.',
+      },
+    },
+  },
+  guanahani: {
+    year: '1492', place: 'Guanahani', world: 'island', ambient: 'sea', hintAt: '12 Ekim 1492',
+    arrive: { at: [0, 6], face: [0, -70], text: '12 Ekim 1492, sabah. Bahamalar’da küçük bir ada: Guanahani. Burada Lukayolar yaşıyor. Kimse seni göremiyor.' },
+    traces: [[-3, 1.5], [0, 1], [3, 1.5]],
+    lines: [['Denizin üstünde kuşa benzeyen büyük bir şey var.', 'Balıkçı'], ['Dün gece ışık görenler oldu.', 'Kadın']],
+    trophy: { name: 'Cam boncuk dizisi', item: 'paper', title: 'Anı · 12 Ekim 1492' },
+    spectacle: {
+      label: 'İlk Karşılaşma', title: '12 Ekim 1492', at: [0, 6], face: [0, -70], y: 3.4, bounds: { x: [-3, 3], z: [4.6, 7.4] }, sleeve: null, traceAt: [6.5, 4.5], traceRy: -1.3,
+      actor: { model: 'hood', robe: '#a07a4e', hat: 'none' }, end: 'Kıyıdan gördün. Şimdi aynı sabahı gemide ve köyde olanların gözünden görebilirsin.',
+      beats: [
+        { t: 0, text: 'Bu ada Guanahani. Burada yaşayan Lukayolar için sabah her günkü gibi başladı.' },
+        { t: 13, text: 'Gece saat 2’de Pinta’dan kara görüldü. Şimdi üç gemi açıkta duruyor. Kolomb Asya’ya vardığını sanıyor.' },
+        { t: 28, text: 'Silahlı bir kayık kıyıya yaklaşıyor. Kolomb kraliyet sancağını, iki kaptan yeşil haçlı sancakları taşıyor.' },
+        { t: 43, text: 'Adalılar kıyıya iniyor. İki taraf birbirinin dilini bilmiyor.' },
+        { t: 57, text: 'Kolomb adayı Kastilya adına sahipleniyor. Noter bunu yazıya geçiriyor. Adada yaşayanlara kimse sormuyor.' },
+        { t: 72, text: 'Kırmızı bereler ve cam boncuklar veriliyor. Adalılar pamuk ipliği, papağan ve mızrak getiriyor.' },
+        { t: 87, text: 'Kolomb günlüğüne bu insanların iyi hizmetkâr olacağını yazdı. İki gün sonra altı ya da yedi adalıyı İspanya’ya götürmek üzere aldırdı.' },
+        { t: 102, text: 'Hispaniola’da 1492 nüfusu için tahminler 10 bin ile 1 milyon arasında değişiyor. 1514’te yaklaşık 32 bin Taíno kalmıştı. Zorla çalıştırma, şiddet ve hastalıkların payı hâlâ tartışılıyor.' },
+      ],
+    },
+    closing: 'Avrupa için bu bir keşifti. Adada yaşayanlar için ise yüzyıllar sürecek bir sömürgeleştirmenin başlangıcıydı. Lukayo ve Taíno soyu bugün de yaşıyor.',
+    characters: {
+      gemici: {
+        label: 'Pinta gemicisi', model: 'adv', robe: '#5a4a3a', hat: 'none', sleeve: '#5a4a3a',
+        world: 'deck', floorY: 0, bounds: { x: [-1.6, 1.6], z: [-6.5, 6] }, spawn: [0, 5], face: [0, -40],
+        wake: 'Gece. Pinta’nın güvertesindesin. Haftalardır kara görmedin. Kaptan fısıldıyor: “Feneri pruvaya götür.”',
+        item: { kind: 'lantern', label: 'Fener', at: [1, 2.5] }, target: { label: 'Feneri pruvaya as', at: [0, 2, -6.6] },
+        carry: 'Ay ışığı yeterli değil. Feneri pruvaya götür.',
+        prompt: 'Arkadaşın Pedro su payını sana uzatıyor. Hastasın, ama o da günlerdir az içiyor.',
+        options: {
+          al: { label: 'Suyu al', result: 'Suyu içtin. Pedro hiçbir şey demedi, sırtını küpeştede dayadı.', memory: 'Pedro’nun uzattığı su.', finale: 'Gemici arkadaşının suyunu aldı.' },
+          ver: { label: 'Geri ver', result: 'Başını salladın, suyu geri verdin. Boğazın yandı ama gece daha kolay geçti.', memory: 'Boğazındaki kuruluk.', finale: 'Gemici suyu arkadaşına bıraktı.' },
+        },
+        climax: { label: 'Ufka bak', at: [0, 2.6, -14], text: 'Gece saat 2. Bir ses bağırıyor. Ufka bak.' },
+        history: 'Karayı ilk gören Pinta’daki gemici Rodrigo de Triana olarak kayıtlıdır. Senin kararın karaya varışı değiştirmedi; yalnızca Pedro’yla hikâyeni değiştirdi.',
+      },
+      lukayo: {
+        label: 'Lukayo balıkçısı', model: 'adv', robe: '#a87a4e', hair: '#141210', hat: 'none', sleeve: '#a87a4e',
+        world: 'island', floorY: 0, bounds: { x: [-14, 14], z: [-9, 13] }, spawn: [-9, -7], face: [8, 10],
+        wake: 'Sabah balığın iyi geldi. Sepetin dolu. Köyde kızın seni bekliyor.',
+        item: { kind: 'basket', label: 'Balık sepeti', at: [-7.4, -5.6] }, target: { label: 'Sepeti köye bırak', at: [3.4, 1.1, 8.2] },
+        carry: 'Balığı bohíoların önüne götür. Kıyıda bir hareket var ama önce sepet.',
+        prompt: 'Yabancılar kıyıda. Kızın onları görmek istiyor. Yanındakiler ne yapacağını soruyor.',
+        options: {
+          git: { label: 'Yabancılara yaklaş', result: 'Pamuk ipliği uzattın, karşılığında parlak bir boncuk aldın. Neyi verdiğini ikiniz de bilmiyordunuz.', memory: 'Avucundaki boncuğun ağırlığı.', finale: 'Lukayo balıkçısı yabancılara yaklaştı.' },
+          uzak: { label: 'Kızını uzak tut', result: 'Kızını ağaçların arasına götürdün. O gün yalnızca uzaktan izlediniz.', memory: 'Ağaçların arasından görünen kıyı.', finale: 'Lukayo balıkçısı kızını uzak tuttu.' },
+        },
+        climax: { label: 'Gemilere bak', at: [0, 3, -40], text: 'Açıktaki üç büyük şey hâlâ orada. Oraya bak.' },
+        history: 'Kolomb iki gün sonra adalılardan altı ya da yedi kişiyi götürmek üzere aldırdı. Senin kararın bunu değiştirmedi; yalnızca kızınla hikâyeni değiştirdi.',
+      },
+      yazman: {
+        label: 'Yazman yardımcısı', model: 'adv', robe: '#3e3440', hat: 'bork', cap: '#24202a', sleeve: '#3e3440',
+        world: 'island', floorY: 0, bounds: { x: [-14, 14], z: [-9, 13] }, spawn: [7, -7], face: [-4, -8],
+        wake: 'Kuma ilk adımı attın. Noter Escobedo tutanağı istiyor. Etrafın insanlarla dolu ama kimse ne yazdığınızı bilmiyor.',
+        item: { kind: 'paper', label: 'Tutanak', at: [8.4, -5.4] }, target: { label: 'Tutanağı nötere ver', at: [-4.6, 1.2, -8.2] },
+        carry: 'Tutanağı sancağın yanındaki notere götür.',
+        prompt: 'Tutanakta ada sahipsiz gibi anlatılıyor. Yanı başında insanlar duruyor. Kenara not düşebilirsin.',
+        options: {
+          yaz: { label: 'Gördüğünü not et', result: 'Küçük bir not düştün. Kimse okumadı, ama o gün gördüğün yazılıydı.', memory: 'Kenara düştüğün küçük not.', finale: 'Yazman yardımcısı gördüğünü kenara yazdı.' },
+          sus: { label: 'Yazılanı bırak', result: 'Tutanak olduğu gibi kaldı. İmzayı attın, yürüdün.', memory: 'İmzanın kumda kurumayan mürekkebi.', finale: 'Yazman yardımcısı metne dokunmadı.' },
+        },
+        climax: { label: 'Sancağa bak', at: [-5.6, 3, -8.6], text: 'Sancak kuma dikildi. Oraya bak.' },
+        history: 'Noter Rodrigo de Escobedo ve Rodrigo Sánchez sahiplenmenin tanığı olarak çağrıldı. Senin kararın ilanı değiştirmedi; yalnızca o sabahı kendi içinde nasıl hatırlayacağını değiştirdi.',
       },
     },
   },

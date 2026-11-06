@@ -20,9 +20,10 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Tetikle kapanan parmaklar, hedef üzerinde hafif titreşim
 - Cihazda Türkçe ses varsa metinleri okuyan anlatıcı; yoksa altyazı
 
+- Guanahani 1492: Pinta gemicisi, Lukayo balıkçısı, yazman yardımcısı; İlk Karşılaşma izleme sahnesi
 - Ankara 1923: telgraf memuru, Meclis kâtibi, öğretmen Ayşe; Cumhuriyet Gecesi izleme sahnesi
 
-Yusuf, Nikolas, Eleni, Pierre, Anna, Ayşe ve Zehra kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
+Yusuf, Nikolas, Eleni, Pierre, Anna, Ayşe, Zehra ve Pedro kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
 
 ## Henüz olmayanlar
 

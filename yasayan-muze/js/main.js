@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { advance, initialState, currentCharacter } from './story.js';
 import { CHAPTERS } from './chapters.js';
 import * as T from './textures.js';
-import { buildMuseum, buildSiege, buildCity, buildParis, buildAnkara, buildMeclis, glow, box, makeHand, makeItem } from './worlds.js';
+import { buildMuseum, buildSiege, buildCity, buildParis, buildAnkara, buildMeclis, buildIsland, buildDeck, glow, box, makeHand, makeItem } from './worlds.js';
 import { loadKit, makeActor } from './actors.js';
 import { Panel } from './ui.js';
 import { Sound } from './audio.js';
@@ -20,7 +20,7 @@ document.body.prepend(renderer.domElement);
 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 400), rig = new THREE.Group();
 camera.position.y = 1.62; rig.add(camera); scene.add(rig);
 await loadKit();
-const museum = buildMuseum(), worlds = { museum, siege: buildSiege(), city: buildCity(), paris: buildParis(), ankara: buildAnkara(), meclis: buildMeclis() }, sound = new Sound();
+const museum = buildMuseum(), worlds = { museum, siege: buildSiege(), city: buildCity(), paris: buildParis(), ankara: buildAnkara(), meclis: buildMeclis(), island: buildIsland(), deck: buildDeck() }, sound = new Sound();
 for (const w of Object.values(worlds)) { scene.add(w.group); w.group.visible = false; }
 $('masa').disabled = false; $('masa').textContent = 'Ekranda Dene'; $('vr').textContent = "VR'a Gir";
 const lit = (o) => new THREE.MeshLambertMaterial(o);
@@ -95,7 +95,7 @@ const prop = { group: new THREE.Group(), crate: box(1.1, .7, .7, lit(T.pbr(T.cra
 const pHit = (r) => new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
 Object.assign(prop, { itemHit: pHit(.5), targetHit: pHit(1), climaxHit: pHit(.9), trophyHit: pHit(.6) });
 prop.group.add(prop.crate, prop.itemGlow, prop.targetGlow, prop.climaxGlow, prop.itemHit, prop.targetHit, prop.climaxHit, prop.trophyHit);
-for (const k of ['wad', 'basket', 'bread', 'paper', 'box', 'flag']) { prop.kinds[k] = makeItem(k); prop.kinds[k].visible = false; prop.group.add(prop.kinds[k]); }
+for (const k of ['wad', 'basket', 'bread', 'paper', 'box', 'flag', 'lantern']) { prop.kinds[k] = makeItem(k); prop.kinds[k].visible = false; prop.group.add(prop.kinds[k]); }
 prop.trophy = new THREE.Group(); prop.group.add(prop.trophy);
 prop.trophy.add(new THREE.Mesh(new THREE.PlaneGeometry(.7, .52), new THREE.MeshBasicMaterial({ color: '#d8caa6' }))); prop.trophy.children[0].rotation.x = -Math.PI / 2;
 let held = null;
@@ -160,14 +160,14 @@ async function enter(stage) {
   const ch = CHAPTERS[state.chapter], c = currentCharacter(state), me = ++token;
   if (stage === 'traveller') {
     const w = worlds[ch.world]; w.reset(); heard.clear(); prop.group.parent?.remove(prop.group); showTraces(state.chapter); setPersona(false, '#264a66');
-    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient(ch.world === 'siege' ? 'camp' : 'crowd'); allHands().forEach(h => { h.visible = true; });
+    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient(ch.ambient || (ch.world === 'siege' ? 'camp' : 'crowd')); allHands().forEach(h => { h.visible = true; });
     await fade(0, 1.2); say(ch.arrive.text, 'Zaman Yolcusu', 7); hint('Çevreyi dinle, sonra içine gireceğin hayatı seç.');
     await wait(7); if (token === me) say('Işıldayan izlerden birine dokun. İstediğin zaman dönüp başka birini seçebilirsin.', 'Zaman Yolcusu', 8);
   } else if (stage === 'assault') {
     const w = worlds.siege, a = ch.assault; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog, 64); setPersona(true, '#d8d0bc'); climb.step = 0; setWorld(w, 3, -32.6, 3, -60, 0, { x: [1, 5], z: [-34, -31] }); sound.ambient('camp');
     await fade(0, 1.6); nextClimb(a);
   } else if (stage === 'spectacle') {
-    const w = worlds[ch.world], sp = ch.spectacle; busy = true; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog); setPersona(!!sp.sleeve, sp.sleeve || '#264a66'); setWorld(w, ...sp.at, ...sp.face, sp.y, sp.bounds); sound.ambient(ch.world === 'siege' ? 'camp' : 'crowd');
+    const w = worlds[ch.world], sp = ch.spectacle; busy = true; hint(''); showTraces(null); w.reset(); prop.group.parent?.remove(prop.group); w.spect.start(sound, w.fog); setPersona(!!sp.sleeve, sp.sleeve || '#264a66'); setWorld(w, ...sp.at, ...sp.face, sp.y, sp.bounds); sound.ambient(ch.ambient || (ch.world === 'siege' ? 'camp' : 'crowd'));
     await fade(0, 2); let at = 0;
     for (const b of sp.beats) { await wait(b.t - at); at = b.t; say(b.text, sp.title, 9); }
     await wait(12); await fade(1, 2); w.spect.stop(); busy = false; endNote = sp.end; go('watchDone');
@@ -194,7 +194,7 @@ async function enter(stage) {
     say(ch.closing, 'Tarih', 9); await wait(9); busy = false; go('finish');
   } else if (stage === 'museum') {
     busy = true; hint(''); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
-    { const pz = { istanbul: 1, paris: -3.4, ankara: -7.8 }[state.chapter] ?? 1; setWorld(museum, 1.2, pz + 3, 3, pz); } sound.ambient('museum');
+    { const [px, pz] = { istanbul: [3, 1], paris: [3, -3.4], ankara: [3, -7.8], guanahani: [-3, -5.4] }[state.chapter] ?? [3, 1]; setWorld(museum, px * .4, pz + 3, px, pz); } sound.ambient('museum');
     for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy);
     await fade(0, 1); if (endNote) { say(endNote, 'Saat 00.24', 8); endNote = ''; busy = false; return; } say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
   }
