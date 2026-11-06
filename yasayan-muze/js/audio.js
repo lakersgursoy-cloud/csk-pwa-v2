@@ -31,6 +31,9 @@ export class Sound {
     o.connect(g).connect(this.master); o.start(t); o.stop(t + dur);
   }
   heartbeat() { for (const d of [0, .32, 1.05, 1.37]) this.thud(48, .24, .8, d); }
+  applause(dur = 4) {
+    if (!this.ctx) return; for (let i = 0; i < 8; i++) { const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime + i * dur / 9; s.buffer = this.noise; f.type = 'highpass'; f.frequency.value = 1400; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(5, t + .4); g.gain.linearRampToValueAtTime(0, t + 1.4); s.connect(f).connect(g).connect(this.master); s.start(t); s.stop(t + 1.5); }
+  }
   chime() { if (!this.ctx) return; for (const [i, f] of [392, 587].entries()) { const t = this.ctx.currentTime + i * .08, o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.frequency.value = f; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + 1.2); o.connect(g).connect(this.master); o.start(t); o.stop(t + 1.2); } }
   cannon() {
     if (!this.ctx) return; this.thud(46, 2.4, 1.3);

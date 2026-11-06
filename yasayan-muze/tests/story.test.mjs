@@ -51,7 +51,7 @@ test('İzleme sahneleri iki dönemde de açılır, seçim ve kayıt değiştirme
   s = advance(s, 'watchDone'); assert.equal(s.stage, 'museum'); assert.deepEqual(s.done, {});
 });
 test('İzleme sahnesi metinleri zaman sırasındadır ve kurgu sözü içermez', () => {
-  for (const c of ['istanbul', 'paris']) { const b = CHAPTERS[c].spectacle.beats; assert.ok(b.length >= 6); b.forEach((x, i) => { if (i) assert.ok(x.t > b[i - 1].t); assert.ok(!/[“”"]/.test(x.text)); }); }
+  for (const c of Object.keys(CHAPTERS)) { const b = CHAPTERS[c].spectacle.beats; assert.ok(b.length >= 6); b.forEach((x, i) => { if (i) assert.ok(x.t > b[i - 1].t); assert.ok(!/[“”"]/.test(x.text)); }); }
 });
 test('Yeniçeri bölümü yalnızca İstanbul’da açılır ve kayıt değiştirmez', () => {
   let s = run(initialState(), [['door', 'paris'], ['climb']]); assert.equal(s.stage, 'traveller');

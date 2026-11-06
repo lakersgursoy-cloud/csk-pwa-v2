@@ -40,6 +40,7 @@ function hatMesh(kind, cap) {
   if (kind === 'bork') { mesh(new THREE.CylinderGeometry(.085, .112, .19, 10), m, .055); const b = mesh(new THREE.TorusGeometry(.11, .016, 5, 14), d, -.03); b.rotation.x = Math.PI / 2; }
   if (kind === 'helm') { mesh(new THREE.SphereGeometry(.122, 11, 7, 0, 6.3, 0, 1.65), m, -.035); mesh(new THREE.ConeGeometry(.018, .07, 6), m, .11); }
   if (kind === 'tricorne') { const b = mesh(new THREE.CylinderGeometry(.16, .17, .03, 3), m, -.015); b.rotation.y = .5; mesh(new THREE.CylinderGeometry(.09, .105, .08, 10), m, .03); }
+  if (kind === 'fez') { mesh(new THREE.CylinderGeometry(.075, .1, .13, 12), m, .03); mesh(new THREE.CylinderGeometry(.004, .004, .09, 4), d, .1); }
   if (kind === 'scarf') { mesh(new THREE.SphereGeometry(.118, 10, 7, 0, 6.3, 0, 1.8), m, -.05, 1, 1.05); }
   return g;
 }

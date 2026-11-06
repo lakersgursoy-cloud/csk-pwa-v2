@@ -1,4 +1,4 @@
-// Bölüm içeriği. Yusuf, Eleni, Anna gibi kişiler kurgudur; tarihî olay ve sonuçlar değişmez.
+// Bölüm içeriği. Yusuf, Eleni, Anna, Ayşe, Zehra gibi kişiler kurgudur; tarihî olay ve sonuçlar değişmez.
 export const CHAPTERS = {
   istanbul: {
     year: '1453', place: 'İstanbul', world: 'siege', hintAt: 'Mayıs 1453',
@@ -141,6 +141,71 @@ export const CHAPTERS = {
         },
         climax: { label: 'Köprüye bak', at: [0, 3, -24], text: 'Kalabalıktan bir uğultu yükseliyor. Köprüye bak.' },
         history: 'Yiyecek fiyatları o yazın öfkesinin parçasıydı. Senin kararın Bastille’i değiştirmedi; yalnızca Anna’yla hikâyeni değiştirdi.',
+      },
+    },
+  },
+  ankara: {
+    year: '1923', place: 'Ankara', world: 'ankara', hintAt: '29 Ekim 1923',
+    arrive: { at: [0, 4], face: [0, -26], text: '29 Ekim 1923, akşam. Ankara birkaç haftadır başkent. Meclis’in ışıkları yanıyor. Kimse seni göremiyor.' },
+    traces: [[-3, -1.5], [0, -2], [3, -1.5]],
+    lines: [['Kabine kurulamadı, günlerdir bunu konuşuyorlar.', 'Kahvedeki adam'], ['Vekiller bu akşam Meclis’ten çıkmadı.', 'Kadın']],
+    trophy: { name: 'Gazete kopyası', item: 'paper', title: 'Anı · 29 Ekim 1923' },
+    spectacle: {
+      label: 'Cumhuriyet Gecesi', title: '29 Ekim 1923', at: [0, 3], face: [0, -26], y: 4.8, bounds: { x: [-3, 3], z: [1.6, 4.4] }, sleeve: null, traceAt: [6.5, 1], traceRy: -1.3,
+      actor: { robe: '#2c2a2e', hat: 'fez', cap: '#8c1f1c' }, end: 'Gecenin tamamını gördün. Şimdi aynı akşamı içeride ve sokakta olanların gözünden görebilirsin.',
+      beats: [
+        { t: 0, text: 'Hükümet bunalımı günlerdir sürüyor. Sabahtan beri Halk Fırkası grubu toplantıda.' },
+        { t: 12, text: 'Saat 18.00. Öneri Meclis’in anayasa komisyonuna geldi. 19.00’da görüşmeler başladı.' },
+        { t: 27, text: 'Saat 20.30. Değişiklik kabul edildi. Oturuma katılan 158 milletvekilinin tamamı onayladı. Devletin yönetim biçimi cumhuriyet oldu.' },
+        { t: 43, text: 'Saat 20.45. Mustafa Kemal Paşa cumhurbaşkanı seçildi. 158 oyun tamamını aldı.' },
+        { t: 57, text: 'Haber sokağa yayılıyor. İnsanlar Meclis’in önünde toplanıyor.' },
+        { t: 73, text: 'Karar o gece telgrafla yurda bildirildi. Herkes haberi aynı sevinçle karşılamadı; Rauf Bey kararın aceleye geldiğini söyledi.' },
+        { t: 89, text: 'Bir gazetecinin anılarına göre Ankara bütün gece şenlik yaptı. Ertesi gün gazeteler ilanı manşetten duyurdu, İsmet Paşa başbakan oldu.' },
+      ],
+    },
+    closing: 'Ertesi gün gazeteler ilanı manşetten duyurdu. Yeni rejim bir akşamda ilan edildi; üç hayat onu kendi yerinden öğrendi.',
+    characters: {
+      memur: {
+        label: 'Telgraf memuru', model: 'adv', robe: '#39424e', cap: '#8c1f1c', hat: 'fez', sleeve: '#39424e',
+        world: 'ankara', floorY: 0, bounds: { x: [-11, 11], z: [-20, 9] }, spawn: [-9, 3], face: [0, -20],
+        wake: 'Telgrafhanenin önündesin. Müdür sesleniyor: “Meclis’ten gelen metni kaçırma.”',
+        item: { kind: 'paper', label: 'Telgraf metni', at: [-7.2, 2.2] }, target: { label: 'Metni hatta ver', at: [-9.6, 1.2, -5.5] },
+        carry: 'Hatlar bu gece yoğun. Metni makine masasına götür.',
+        prompt: 'Erzurum hattı açıldı. Kardeşin orada görevli. Resmî metinden önce ona iki kelime geçebilirsin. Müdür görmedi.',
+        options: {
+          kardes: { label: 'Kardeşine haber geç', result: 'Yanıt geldi: “Duydum. Annem ağlıyor.” Müdür sıra atladığını sonra öğrendi.', memory: 'Erzurum hattından gelen iki kelime.', finale: 'Telgraf memuru haberi önce kardeşine geçti.' },
+          sira: { label: 'Sırayı bozma', result: 'Metin sırasıyla gitti. Kardeşin haberi sabah gazeteden öğrendi.', memory: 'Hattın sabaha kadar süren tıkırtısı.', finale: 'Telgraf memuru sırayı bozmadı.' },
+        },
+        climax: { label: 'Meclis’e bak', at: [0, 4, -22], text: 'Sokaktan ses yükseliyor. Meclis’e bak.' },
+        history: 'Karar o gece telgrafla yurda bildirildi. Senin kararın bunu değiştirmedi; yalnızca kardeşinle hikâyeni değiştirdi.',
+      },
+      katip: {
+        label: 'Meclis kâtibi', model: 'adv', robe: '#2b2b33', cap: '#8c1f1c', hat: 'fez', sleeve: '#2b2b33',
+        world: 'meclis', floorY: 0, bounds: { x: [-6, 6], z: [-7, 7] }, spawn: [-4.5, 5], face: [0, -8],
+        wake: 'Meclis salonundasın. Tartışma bir buçuk saattir sürüyor. Elinde komisyonun kâğıtları var.',
+        item: { kind: 'paper', label: 'Komisyon kâğıtları', at: [-4.8, 3] }, target: { label: 'Kâğıtları Divan’a ver', at: [1.8, 1.4, -6.2] },
+        carry: 'Kâğıtları kürsünün yanındaki Divan masasına götür.',
+        prompt: 'Eski arkadaşın bir vekil kulağına eğiliyor: “Dışarıda gazeteciler ne olduğunu soruyor.” Salonda kalman gerekiyor.',
+        options: {
+          kal: { label: 'Salonda kal', result: 'Yerinden kıpırdamadın. Sonucu ilk duyanlardan biri oldun.', memory: 'Salondaki sayımın sessizliği.', finale: 'Meclis kâtibi salondan ayrılmadı.' },
+          cik: { label: 'Kapıya kadar git', result: 'Kapıya gittin, tek kelime etmeden döndün. Azar yedin, arkadaşın sana minnet duydu.', memory: 'Kapı eşiğindeki soğuk hava.', finale: 'Meclis kâtibi kapıya kadar gidip döndü.' },
+        },
+        climax: { label: 'Sonucu dinle', at: [0, 2.2, -5.5], text: 'Saat 20.30. Reis sonucu okumak üzere. Kürsüye bak.' },
+        history: 'Oturuma katılan 158 milletvekilinin tamamı değişikliği onayladı. Senin kararın sonucu değiştirmedi; yalnızca o akşamı nasıl hatırlayacağını değiştirdi.',
+      },
+      ogretmen: {
+        label: 'Öğretmen Ayşe', model: 'hood', robe: '#38414f', cap: '#ddd2bc', hat: 'none', sleeve: '#38414f',
+        world: 'ankara', floorY: 0, bounds: { x: [-11, 11], z: [-20, 9] }, spawn: [9, 4], face: [0, -20],
+        wake: 'Okuldan yeni çıktın. Öğrencin Zehra sokakta seni arıyor. Elinde bir bayrak var.',
+        item: { kind: 'flag', label: 'Bayrak', at: [7.6, 2.4] }, target: { label: 'Bayrağı Zehra’ya uzat', at: [4.2, 1, -3] },
+        carry: 'Bayrağı sokaktaki Zehra’ya götür.',
+        prompt: 'Zehra’nın babası kızının okuldan alınacağını söylemişti. Şimdi ikisi de karşında duruyor.',
+        options: {
+          konus: { label: 'Babasıyla konuş', result: 'Baba önce sustu, sonra “Yarın gelsin” dedi. Zehra’nın gözleri parladı.', memory: 'Zehra’nın ertesi sabah sınıfa girişi.', finale: 'Öğretmen Ayşe bir babayla konuştu.' },
+          bekle: { label: 'Bu gece bekle', result: 'Bu gecenin sevincini bozmadın. Zehra ertesi gün okula gelmedi, sen de kapıya gittin.', memory: 'Ertesi sabah boş kalan sıra.', finale: 'Öğretmen Ayşe konuşmayı ertesi güne bıraktı.' },
+        },
+        climax: { label: 'Meclis’e bak', at: [0, 4, -22], text: 'Meclis’in önünde kalabalık büyüyor. Oraya bak.' },
+        history: 'Yeni kurulan Cumhuriyet, kızların okula gidişi gibi tartışmaları da yanında getirecekti. Senin kararın o geceyi değiştirmedi; yalnızca Zehra’yla hikâyeni değiştirdi.',
       },
     },
   },

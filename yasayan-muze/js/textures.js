@@ -180,3 +180,28 @@ export function facade(kind, seed = 0) {
   g.fillStyle = '#2b1c12'; g.fillRect(205, 372, 100, 140); g.fillStyle = '#6a4a2c'; g.fillRect(213, 380, 84, 132); g.fillStyle = '#3f2a18'; for (let x = 228; x < 297; x += 22) g.fillRect(x, 380, 3, 132);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
+
+export const nightSky = () => { const t = paintSky([[0, '#080c1e'], [.4, '#1c2440'], [.5, '#3c4258'], [.52, '#1c1a1e'], [1, '#121014']], '110,120,160', null), c = t.image, g = c.getContext('2d'); for (let i = 0; i < 700; i++) { g.fillStyle = `rgba(255,250,235,${.15 + rnd() * .6})`; g.fillRect(rnd() * 1024, 40 + rnd() * 190, .7, .7); } g.fillStyle = '#efe8d2'; g.beginPath(); g.arc(760, 90, 22, 0, 7); g.fill(); t.needsUpdate = true; return t; };
+export function drawAnkara(g) {
+  const s = g.createLinearGradient(0, 0, 0, 768); s.addColorStop(0, '#101a38'); s.addColorStop(.6, '#46506c'); s.addColorStop(.7, '#2a2428'); s.addColorStop(1, '#1b1718'); g.fillStyle = s; g.fillRect(0, 0, 512, 768);
+  g.fillStyle = '#ecd9a8'; g.beginPath(); g.arc(380, 120, 28, 0, 7); g.fill(); g.fillStyle = '#6a4f58'; g.fillRect(50, 360, 412, 180); g.fillStyle = '#7f3a2c'; g.beginPath(); g.moveTo(30, 360); g.lineTo(256, 280); g.lineTo(482, 360); g.fill();
+  g.fillStyle = '#ffd98a'; for (let x = 76; x < 440; x += 58) { g.fillRect(x, 392, 26, 46); g.fillRect(x, 464, 26, 46); }
+  g.fillStyle = '#b5271f'; g.fillRect(240, 210, 56, 36); g.fillStyle = '#fff'; g.beginPath(); g.arc(256, 228, 10, 0, 7); g.fill(); g.fillStyle = '#b5271f'; g.beginPath(); g.arc(259, 228, 8, 0, 7); g.fill(); g.fillStyle = '#3a2a1a'; g.fillRect(236, 210, 4, 150);
+}
+export function drawGazette() {
+  const [c, g] = canvas(512, 384); g.fillStyle = '#ddd1b4'; g.fillRect(0, 0, 512, 384); speckle(g, 512, 384, 3000, .08); g.fillStyle = '#231b14'; g.textAlign = 'center'; g.direction = 'rtl';
+  g.font = 'bold 46px Georgia, serif'; g.fillText('جمهوريت اعلان اولندى', 256, 80); g.fillRect(40, 102, 432, 3); for (let col = 0; col < 3; col++) for (let y = 124; y < 350; y += 16) g.fillRect(44 + col * 146, y, 126 - (y * 7 % 19), 5); g.direction = 'ltr';
+  return tex(c);
+}
+export function turkFlag() {
+  const [c, g] = canvas(256, 170); g.fillStyle = '#c8102e'; g.fillRect(0, 0, 256, 170); g.fillStyle = '#fff'; g.beginPath(); g.arc(90, 85, 42, 0, 7); g.fill(); g.fillStyle = '#c8102e'; g.beginPath(); g.arc(101, 85, 34, 0, 7); g.fill(); g.fillStyle = '#fff'; g.save(); g.translate(142, 85); g.rotate(-Math.PI / 2); g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 9 : 22, a = i * Math.PI / 5; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.fill(); g.restore();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+export function meclisFacade() {
+  const [c, g] = canvas(1024, 256); g.fillStyle = '#7a5f68'; g.fillRect(0, 0, 1024, 256);
+  for (let y = 0; y < 256; y += 18) for (let x = (y / 18 % 2) * -24; x < 1024; x += 48) { const v = rnd() * 24 - 12; g.fillStyle = `rgb(${122 + v},${94 + v},${106 + v})`; g.fillRect(x + 1, y + 1, 46, 16); } speckle(g, 1024, 256, 6000, .06);
+  g.fillStyle = '#c8bda8'; g.fillRect(0, 122, 1024, 7); g.fillRect(0, 6, 1024, 7);
+  for (const y of [34, 150]) for (let x = 30; x < 1000; x += 66) { if (x > 440 && x < 560 && y > 100) continue; g.fillStyle = '#d9cbb4'; g.fillRect(x - 5, y - 5, 42, 80); g.fillStyle = '#171a24'; g.fillRect(x, y, 32, 70); }
+  return tex(c);
+}
+export function adobe(seed) { const [c, g] = canvas(256, 256); g.fillStyle = ['#a18c72', '#8f7c66', '#b09a7c'][seed % 3]; g.fillRect(0, 0, 256, 256); speckle(g, 256, 256, 3000, .1); g.fillStyle = '#4a3324'; g.fillRect(0, 104, 256, 8); for (let x = 12; x < 256; x += 60) g.fillRect(x, 0, 7, 256); g.fillStyle = '#1b1a1e'; g.fillRect(48, 26, 44, 60); g.fillRect(160, 26, 44, 60); g.fillStyle = '#3a2619'; g.fillRect(100, 140, 58, 116); return tex(c); }

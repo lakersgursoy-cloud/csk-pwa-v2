@@ -20,7 +20,9 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Tetikle kapanan parmaklar, hedef üzerinde hafif titreşim
 - Cihazda Türkçe ses varsa metinleri okuyan anlatıcı; yoksa altyazı
 
-Yusuf, Nikolas, Eleni, Pierre ve Anna kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
+- Ankara 1923: telgraf memuru, Meclis kâtibi, öğretmen Ayşe; Cumhuriyet Gecesi izleme sahnesi
+
+Yusuf, Nikolas, Eleni, Pierre, Anna, Ayşe ve Zehra kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
 
 ## Henüz olmayanlar
 

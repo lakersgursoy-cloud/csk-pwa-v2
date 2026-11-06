@@ -90,7 +90,7 @@ export function buildMuseum() {
   const stA = makeActor({ model: 'king', stone: true, hat: 'none', scale: 1.18 }), statue = stA.root; statue.position.set(-3, .7, .5); statue.rotation.y = Math.PI / 2 - .1; statue.userData.head = stA.head; g.add(statue, box(1.3, .7, 1.3, stone, -3, .35, .5));
   // Kapılar
   const mkDoor = (x, title, sub, draw, color) => {
-    const d = new THREE.Group(); d.position.set(x, 0, cz - L / 2 + .05);
+    const d = new THREE.Group(); d.position.set(x, 0, cz - L / 2 + .05); d.scale.set(.96, 1, 1);
     const p = new T.CrowdPainting(draw, 34), pic = new THREE.Mesh(new THREE.PlaneGeometry(3, 4.5), new THREE.MeshBasicMaterial({ map: p.t })); pic.position.set(0, 2.4, .12);
     d.add(box(3.4, 4.9, .2, gold, 0, 2.45, 0), pic);
     const l = new Panel(3, .72, { size: 62, bg: 'rgba(16,12,8,.92)' }).set(title, sub); l.position.set(0, 5.45, .12); d.add(l);
@@ -98,7 +98,7 @@ export function buildMuseum() {
     const hit = box(3.2, 4.8, .6, new THREE.MeshBasicMaterial({ visible: false }), 0, 2.4, .4); d.add(hit);
     Object.assign(d.userData, { painting: p, hit, glow: g2 }); g.add(d); return d;
   };
-  const door1453 = mkDoor(-3, '1453', 'İstanbul', T.drawIstanbul, '255,180,100'), door1789 = mkDoor(3, '1789', 'Paris', T.drawParis, '150,180,220');
+  const door1453 = mkDoor(-4.2, '1453', 'İstanbul', T.drawIstanbul, '255,180,100'), door1789 = mkDoor(0, '1789', 'Paris', T.drawParis, '150,180,220'), door1923 = mkDoor(4.2, '1923', 'Ankara', T.drawAnkara, '255,120,110');
   // Koleksiyon kaideleri
   const mkPedestal = (z, tx) => {
     const p = new THREE.Group(); p.position.set(3, 0, z); p.add(box(.9, 1.05, .9, stone, 0, .525, 0));
@@ -106,16 +106,16 @@ export function buildMuseum() {
     const hit = hitbox(.75, 0, 1.1, 0), gl = glow(1.5, '255,210,130'); gl.position.y = 1.2; gl.visible = false; p.add(hit, gl); g.add(p);
     return { map: m, hit, glow: gl };
   };
-  const pedestals = { istanbul: mkPedestal(1, T.drawMap()), paris: mkPedestal(-3.4, T.drawPamphlet()) };
+  const pedestals = { istanbul: mkPedestal(1, T.drawMap()), paris: mkPedestal(-3.4, T.drawPamphlet()), ankara: mkPedestal(-7.8, T.drawGazette()) };
   // Konfor levhası
   const comfort = new Panel(1.3, .46, { size: 50 }); comfort.position.set(W / 2 - .05, 1.45, 8.6); comfort.rotation.y = -Math.PI / 2; g.add(comfort);
   const lights = [[0, 6, 8, 34], [0, 6, -7, 42]].map(([x, y, z, i]) => { const l = new THREE.PointLight('#ffcf9a', i, 26, 1.6); l.position.set(x, y, z); return l; }); g.add(...lights);
   g.add(new THREE.HemisphereLight('#d6c4a8', '#2a1c14', 1.1));
-  contactShadows(g, [[-3, 0, .5, 3], [3, 0, 1, 2.2], [3, 0, -3.4, 2.2], ...Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 5.2, 0, 10 - (i >> 1) * 4.4, 1.9])]);
+  contactShadows(g, [[-3, 0, .5, 3], [3, 0, 1, 2.2], [3, 0, -3.4, 2.2], [3, 0, -7.8, 2.2], ...Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 5.2, 0, 10 - (i >> 1) * 4.4, 1.9])]);
   const spot = new THREE.SpotLight('#ffe2bb', 42, 30, 1.25, .6, 1.3); spot.position.set(.5, 7.45, 0); spot.target.position.set(0, 0, -1); spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -.0008; spot.shadow.normalBias = .04; g.add(spot, spot.target);
   const dust = motes(g, 90, [-6, 6], [.3, 6], [-13, 11], '#ffe2b0', .05);
   bakeStatic(g);
-  return { dust, group: g, bounds: { x: [-6, 6], z: [-12.5, 11] }, floorY: 0, floor, statue, doors: { istanbul: door1453, paris: door1789 }, pedestals, comfort, fog: new THREE.Fog('#17100c', 16, 44), bg: '#120d0a' };
+  return { dust, group: g, bounds: { x: [-6, 6], z: [-12.5, 11] }, floorY: 0, floor, statue, doors: { istanbul: door1453, paris: door1789, ankara: door1923 }, pedestals, comfort, fog: new THREE.Fog('#17100c', 16, 44), bg: '#120d0a' };
 }
 
 export function buildSiege() {
@@ -212,8 +212,9 @@ function houses(g, side, from, to, x, colors, roof) {
 
 // Fatih'in Gözünden: tepe, otağ, binlerce asker ve son saldırı.
 const SOLDIER = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 4, 1, true); b.translate(0, .62, 0); const h = new THREE.TetrahedronGeometry(.17, 0); h.translate(0, 1.42, 0); const sp = new THREE.PlaneGeometry(.05, 2.3); sp.translate(.22, 1.1, 0); return mergeGeometries([b.toNonIndexed(), h, sp.toNonIndexed()].map(x => { x.deleteAttribute('uv'); return x; })); })();
-function army(n, make, enter = false) {
-  const geo = SOLDIER.clone(), w = new Float32Array(n * 4), ax = new Float32Array(n), m = new THREE.InstancedMesh(geo, lam({ color: '#fff', side: THREE.DoubleSide }), n), M = new THREE.Matrix4(), c = new THREE.Color();
+const CIVILIAN = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 4, 1, true); b.translate(0, .62, 0); const h = new THREE.TetrahedronGeometry(.17, 0); h.translate(0, 1.42, 0); return mergeGeometries([b.toNonIndexed(), h].map(x => { x.deleteAttribute('uv'); return x; })); })();
+function army(n, make, enter = false, base = SOLDIER) {
+  const geo = base.clone(), w = new Float32Array(n * 4), ax = new Float32Array(n), m = new THREE.InstancedMesh(geo, lam({ color: '#fff', side: THREE.DoubleSide }), n), M = new THREE.Matrix4(), c = new THREE.Color();
   const uni = { uT: { value: 0 } };
   for (let i = 0; i < n; i++) { const o = make(i); M.setPosition(o.x, o.y ?? 0, o.z); m.setMatrixAt(i, M); m.setColorAt(i, c.set(o.color)); w.set([o.delay, o.speed, o.dist, o.back], i * 4); ax[i] = o.ax || 0; }
   geo.setAttribute('aW', new THREE.InstancedBufferAttribute(w, 4)); geo.setAttribute('aX', new THREE.InstancedBufferAttribute(ax, 1));
@@ -266,6 +267,80 @@ function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
     if (t > 84 && s.flagT < 0) s.flagT = t; if (s.flagT > 0) flags.forEach((f, i) => { const k = Math.min(1, (t - s.flagT - i * 2.2) / 2); if (k > 0) { f.visible = true; f.scale.y = k; } });
   };
   return s;
+}
+
+const flagMat = () => new THREE.MeshBasicMaterial({ map: T.turkFlag(), side: THREE.DoubleSide });
+function flagPole(g, x, y, z, h, w = 1.5) { const f = new THREE.Group(); f.position.set(x, y, z); const pole = new THREE.Mesh(new THREE.CylinderGeometry(.03, .04, h, 6), lam({ color: '#3a2a1a' })); pole.position.y = h / 2; const cl = new THREE.Mesh(new THREE.PlaneGeometry(w, w * .66, 8, 2), flagMat()); cl.position.set(w / 2 + .03, h - w * .4, 0); f.add(pole, cl); f.userData.cloth = cl; f.userData.dyn = true; g.add(f); return f; }
+function waveFlag(cl, t) { const p = cl.geometry.attributes.position; cl.userData.x0 ??= Array.from({ length: p.count }, (_, i) => p.getX(i)); for (let i = 0; i < p.count; i++) { const x = cl.userData.x0[i] + .75; p.setZ(i, Math.sin(x * 4 - t * 4) * .06 * x); } p.needsUpdate = true; }
+
+export function buildAnkara() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(230, 20, 12), new THREE.MeshBasicMaterial({ map: T.nightSky(), side: THREE.BackSide, fog: false })));
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), lam(T.pbr(T.dirt(20, 20), 1.6))); f.rotation.x = -Math.PI / 2; f.position.z = -20; g.add(f);
+  const pave = new THREE.Mesh(new THREE.PlaneGeometry(28, 44), lam(T.pbr(T.cobbles(26, 42), 3))); pave.rotation.x = -Math.PI / 2; pave.position.set(0, .02, -9); g.add(pave);
+  const M = -29, stone = lam({ map: T.meclisFacade() }), side = lam({ map: T.plasterTone('#7a5f68', 2, 2) }), tile = lam({ color: '#7f3a2c' });
+  const front = box(32, 10, .3, stone, 0, 5, M + 6); g.add(front, box(.3, 10, 13, side, -16, 5, M), box(.3, 10, 13, side, 16, 5, M), box(32, 10, .3, side, 0, 5, M - 6.5));
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(23.5, 4, 4), tile); roof.rotation.y = Math.PI / 4; roof.scale.z = .4; roof.position.set(0, 12, M); g.add(roof);
+  const porch = lam({ color: '#c8bda8' }); g.add(box(7, .35, 3, porch, 0, 3.4, M + 7.5), box(.45, 3.4, .45, porch, -3, 1.7, M + 8.5), box(.45, 3.4, .45, porch, 3, 1.7, M + 8.5), box(6.4, .35, 2.4, lam({ color: '#6f6658' }), 0, .18, M + 7.8), box(3.4, 3.2, .1, new THREE.MeshBasicMaterial({ color: '#2a1a0c' }), 0, 1.6, M + 6.2));
+  const glowMat = new THREE.MeshBasicMaterial({ color: '#ffcf80', transparent: true, opacity: .25 }), wins = []; for (const y of [2.1, 6.6]) for (let x = -14.2; x < 14.5; x += 1.87 * 1) { if (Math.abs(x) < 2.6 && y < 5) continue; wins.push([x, y]); } const wm = new THREE.InstancedMesh(new THREE.PlaneGeometry(.92, 1.9), glowMat, wins.length), W = new THREE.Matrix4(); wins.forEach(([x, y], i) => { W.setPosition(x, y, M + 6.18); wm.setMatrixAt(i, W); }); wm.userData.dyn = true; g.add(wm);
+  const walls = [0, 1, 2].map(i => lam({ map: T.adobe(i) })); const r1 = lam({ color: '#6e3a2a' });
+  for (const [x, z, w, h, d] of [[-14, 3, 7, 5, 7], [-18, -7, 9, 7, 8], [-19, -17, 8, 5.5, 8], [14, 3, 7, 5, 7], [18, -7, 9, 6.5, 8], [18, -17, 8, 6, 8], [-5, 13, 8, 5, 5], [6, 13, 8, 5.5, 5]]) { const m = walls[(x + z + 99) % 3 | 0]; g.add(box(w, h, d, m, x, h / 2, z)); const c = new THREE.Mesh(new THREE.ConeGeometry(Math.hypot(w, d) * .55, 2.2, 4), r1); c.rotation.y = Math.PI / 4; c.scale.z = d / w; c.position.set(x, h + 1.1, z); g.add(c); }
+  // Ankara Kalesi tepesi: uzakta silüet
+  const hill = new THREE.Mesh(new THREE.ConeGeometry(90, 34, 12), lam({ color: '#27232a' })); hill.position.set(62, 17, -95); hill.scale.z = .6; g.add(hill); for (let x = 34; x < 92; x += 8) g.add(box(5, 6 + (x % 3), 4, lam({ color: '#332e36' }), x, 31 - Math.abs(x - 62) * .42, -92));
+  // Telgraf direkleri ve fenerler
+  const wood = lam({ map: T.wood(1, 3) }); const lights = []; for (const [x, z] of [[-11.5, 1], [-11.5, -11], [11.5, 1], [11.5, -11]]) { g.add(box(.16, 6.5, .16, wood, x, 3.25, z), box(1.4, .1, .1, wood, x, 6, z)); const s = glow(1.8, '255,205,130'); s.position.set(x - Math.sign(x) * .5, 3.6, z); g.add(s); lights.push(s); }
+  g.add(box(3.4, 3, 2.4, lam({ map: T.wood(3, 2) }), -9.6, 1.5, -7.4), box(3.8, .16, 2.8, r1, -9.6, 3.1, -7.4), box(1.6, .9, .7, wood, -9.6, .45, -5.5));
+  // Çocuk ve kalabalık
+  const actors = [], hero = placed(actors, g);
+  hero({ model: 'hood', robe: '#7a4a58', hat: 'none', scale: .68 }, 4.2, -3, -.6); hero({ robe: '#3b3a3e', cap: '#8c1f1c', hat: 'fez', hair: '#6a6258' }, 5.4, -3.6, -.9);
+  hero({ robe: '#3e4450', cap: '#201e22', hat: 'fez' }, 0, 0, 0).patrol([[-8, 7], [-4, -14], [6, -16]]); hero({ model: 'hood', robe: '#5a4a50', hat: 'none' }, 0, 0, 0).patrol([[7, 7], [2, -8], [-7, -4]], .95);
+  const groups = [[hero({ robe: '#2f3a48', cap: '#8c1f1c', hat: 'fez' }, 8, -7, -1, 'Interact').root, hero({ robe: '#4a3a30', cap: '#23202a', hat: 'fez' }, 9.3, -6.7, -2).root], [hero({ model: 'hood', robe: '#54607a', hat: 'none' }, -7, -9, 1.2, 'Interact').root, hero({ robe: '#3a3f4a', cap: '#8c1f1c', hat: 'fez' }, -8.2, -9.6, .4).root]];
+  const fg = [flagPole(g, 0, 10, M + 6.5, 4, 2.4), flagPole(g, -3, 3.6, M + 8.4, 2.2, 1.2), flagPole(g, 3, 3.6, M + 8.4, 2.2, 1.2)];
+  motes(g, 70, [-14, 14], [.4, 7], [-22, 10], '#ffdca8', .05);
+  contactShadows(g, [...groups.flat().map(p => [p.position.x, 0, p.position.z, 1.1]), [4.2, 0, -3, .9], [5.4, 0, -3.6, 1.1]]);
+  bakeStatic(g);
+  const hemi = new THREE.HemisphereLight('#6b7ba8', '#2a2228', 1.5); g.add(hemi); const moon = sunShadow(new THREE.DirectionalLight('#a9bbdd', 1), 46, 1536); moon.position.set(26, 50, 26); moon.target.position.set(0, 0, -12); g.add(moon, moon.target);
+  const warm = new THREE.PointLight('#ffcf8a', 60, 34, 1.5); warm.position.set(0, 5, -16); g.add(warm);
+  // Cumhuriyet Gecesi: sahne, meşaleli kalabalık, yanan pencereler
+  const stage = new THREE.Group(); stage.visible = false; g.add(stage); const R = (a) => Math.random() * a, ww = lam({ map: T.wood(2, 1) }); stage.add(box(7, .22, 4, ww, 0, 4.7, 3)); for (const [x, z] of [[-3.4, 1.2], [3.4, 1.2], [-3.4, 4.8], [3.4, 4.8]]) stage.add(box(.2, 4.7, .2, ww, x, 2.35, z));
+  const N = 2400, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.2) * 13, z = 12 - R(1) * 9; return { x, z, ax: x * .25, color: ['#d8b070', '#8c3a2c', '#cfc5ae', '#6a7a9a', '#b98a50'][R(5) | 0], delay: 55 + R(14), speed: 1.8 + R(.9), dist: z + 3 + R(1) * R(1) * 20, back: 9999 }; }, false, CIVILIAN); mob.visible = false; stage.add(mob);
+  const torches = new Float32Array(600); for (let i = 0; i < 200; i++) torches.set([-13 + R(26), 2 + R(.3), -20 + R(10)], i * 3); const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(torches, 3)); const tp = new THREE.Points(tg, new THREE.PointsMaterial({ color: '#ffb060', size: .4, map: T.soft('255,255,255'), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); stage.add(tp);
+  const spect = { active: false, t: 0, sound: null, setDensity: (k) => { mob.count = Math.floor(N * k); }, raiseFlag() {} };
+  let lit = 0;
+  spect.start = (sound) => { Object.assign(spect, { active: true, t: 0, sound, fired: [] }); stage.visible = true; mob.visible = false; lit = 0; mob.userData.uni.uT.value = 0; tp.material.opacity = 0; };
+  spect.stop = () => { spect.active = false; stage.visible = false; lit = 0; };
+  spect.tick = (dt) => {
+    if (!spect.active) return; spect.t += dt; const t = spect.t; mob.userData.uni.uT.value = t; if (t > 54) mob.visible = true;
+    if (t > 26 && !spect.fired[0]) { spect.fired[0] = 1; lit = 1; spect.sound?.applause(5); spect.sound?.chime(); } if (t > 43 && !spect.fired[1]) { spect.fired[1] = 1; spect.sound?.applause(6); } if (t > 60 && !spect.fired[2]) { spect.fired[2] = 1; spect.sound?.applause(10); }
+    tp.material.opacity = THREE.MathUtils.smoothstep(t, 55, 70);
+  };
+  return { group: g, groups, actors, spect, floorY: 0, fog: new THREE.Fog('#1a1e30', 40, 200), bg: '#0e1120',
+    climax(sound) { lit = 1; sound.applause(6); },
+    reset() { lit = 0; },
+    tick(dt, t) { spect.tick(dt); runActors(actors, dt); glowMat.opacity += ((lit ? .95 : .25) - glowMat.opacity) * Math.min(1, dt * 2); warm.intensity = (lit ? 160 : 60) + Math.sin(t * 7) * 6; fg.forEach(x => waveFlag(x.userData.cloth, t)); } };
+}
+
+export function buildMeclis() {
+  const g = new THREE.Group(), floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 18), lam(T.pbr(T.wood(8, 10), 1.4))); floor.rotation.x = -Math.PI / 2; g.add(floor);
+  const wall = lam(T.pbr(T.plasterTone('#a8987e', 3, 2), 1.2)), dark = lam({ color: '#3a2a1e' }), wood = lam({ map: T.wood(3, 1) });
+  g.add(box(14, 6.5, .3, wall, 0, 3.25, -9), box(14, 6.5, .3, wall, 0, 3.25, 9), box(.3, 6.5, 18, wall, -7, 3.25, 0), box(.3, 6.5, 18, wall, 7, 3.25, 0), box(14, .2, 18, lam({ color: '#6a5a48' }), 0, 6.5, 0));
+  for (let z = -7; z < 9; z += 3.2) for (const s of [-1, 1]) { g.add(box(.06, 2.4, 1.3, new THREE.MeshBasicMaterial({ color: '#141a2c' }), s * 6.84, 3.3, z), box(.1, 2.6, 1.5, dark, s * 6.86, 3.3, z)); }
+  // Kürsü ve Divan
+  g.add(box(10, .5, 3, lam({ map: T.wood(5, 2) }), 0, .25, -7), box(1.4, 1.2, .8, wood, 0, 1.1, -5.9), box(6, .9, 1, wood, 0, .95, -7.6));
+  const benches = []; for (let r = 0; r < 6; r++) for (const s of [-1, 1]) benches.push([s * 3.2, .4, -3 + r * 1.6]); ring(g, 0, wood, benches, 4.6, .8, .55);
+  flagPole(g, -3.2, .5, -8.1, 3.4, 1.4);
+  const actors = [], hero = placed(actors, g), hats = ['#8c1f1c', '#23202a', '#8c1f1c'];
+  [[-1.6, -1.8], [2.6, -1], [-4.4, .4], [4.4, 1.6], [-2.4, 2.2], [2.2, 3.4]].forEach(([x, z], i) => hero({ robe: ['#2b2b33', '#3a3f4a', '#3b3430'][i % 3], cap: hats[i % 3], hat: 'fez', hair: ['#3a2a1e', '#6a6258'][i % 2] }, x, z, 3.14, i % 2 ? 'Interact' : 'Idle_Neutral'));
+  hero({ robe: '#26262c', cap: '#8c1f1c', hat: 'fez' }, 1.4, -7.8, 0, 'Interact');
+  const rows = []; for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2 === 0) rows.push([(c < 2 ? -5 : 1.6) + (c % 2) * 2.4, 0, -2.5 + r * 1.6]); rows.forEach(([x, , z], i) => { const f = figure({ robe: ['#2b2b33', '#3a3f4a', '#3b3430', '#23232a'][i % 4], cap: i % 3 ? '#8c1f1c' : '#23202a', hat: 'bork' }); f.position.set(x, 0, z); f.rotation.y = Math.PI; g.add(f); });
+  const lamps = [[-3.5, -3], [3.5, -3], [-3.5, 4], [3.5, 4]].map(([x, z]) => { const l = glow(1.8, '255,214,150'); l.position.set(x, 5.2, z); g.add(l, box(.04, 1.3, .04, dark, x, 5.85, z)); return l; });
+  motes(g, 40, [-6, 6], [.5, 5], [-8, 8], '#ffe2b0', .04);
+  contactShadows(g, rows.map(([x, , z]) => [x, 0, z, .7]));
+  bakeStatic(g);
+  const main = new THREE.SpotLight('#ffdcb0', 70, 22, 1.4, .7, 1.2); main.position.set(0, 6.2, 0); main.target.position.set(0, 0, -2); main.castShadow = true; main.shadow.mapSize.set(1024, 1024); main.shadow.bias = -.0008; g.add(main, main.target, new THREE.HemisphereLight('#d6c4a8', '#2a1c14', 1.1));
+  return { group: g, groups: [], actors, floorY: 0, fog: new THREE.Fog('#1b140e', 20, 60), bg: '#120d0a', bounds: { x: [-6, 6], z: [-7, 7] },
+    climax(sound) { sound.applause(7); sound.chime(); }, reset() {},
+    tick(dt, t) { runActors(actors, dt); lamps.forEach((l, i) => l.scale.setScalar(1.8 + Math.sin(t * 6 + i) * .08)); } };
 }
 
 export function buildCity() {
@@ -340,7 +415,7 @@ export function buildParis() {
   // Bastille'in Düşüşü: iskele, toplar ve kaleye akan kalabalık.
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); const R = (a) => Math.random() * a, woodS = lam({ map: T.wood(2, 1) });
   stage.add(box(7.5, .22, 4.2, woodS, 0, 5.9, -5)); for (const [x, z] of [[-3.6, -3], [3.6, -3], [-3.6, -7], [3.6, -7]]) stage.add(box(.2, 5.9, .2, woodS, x, 2.95, z)); stage.add(box(7.5, .1, .1, woodS, 0, 6.42, -7.05), box(.1, .1, 4.2, woodS, -3.7, 6.42, -5), box(.1, .1, 4.2, woodS, 3.7, 6.42, -5));
-  const cNames = ['#3a3f4a', '#6e2a21', '#2d3f73', '#5a4a30', '#c8bda6', '#7a5a3a', '#4b5a48'], N = 2600, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.3) * 14, z = 8 - R(1) * 37; return { x, z, ax: x, color: cNames[R(7) | 0], delay: 76 + (z + 29) / 37 * 15 + R(2), speed: 2.5 + R(.6), dist: z + 33.5, back: 9999 }; }, true); stage.add(mob);
+  const cNames = ['#3a3f4a', '#6e2a21', '#2d3f73', '#5a4a30', '#c8bda6', '#7a5a3a', '#4b5a48'], N = 2600, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.3) * 14, z = 8 - R(1) * 37; return { x, z, ax: x, color: cNames[R(7) | 0], delay: 76 + (z + 29) / 37 * 15 + R(2), speed: 2.5 + R(.6), dist: z + 33.5, back: 9999 }; }, true, CIVILIAN); stage.add(mob);
   const pGuns = [-4.5, 4.5].map(x => { const c = new THREE.Group(), b = new THREE.Mesh(new THREE.CylinderGeometry(.13, .17, 2, 10), lam({ color: '#6b5230' })); b.rotation.x = Math.PI / 2; b.position.y = .7; c.add(b, box(.9, .25, 1.6, woodS, 0, .3, .3)); c.position.set(x, 0, -24); c.visible = false; stage.add(c); return c; });
   const flashes = pGuns.map(c => { const s = glow(5, '255,210,140'); s.position.set(c.position.x, 1, -26); s.visible = false; stage.add(s); return s; });
   const spect = { active: false, t: 0, next: 0, puff: 0, sound: null, setDensity: (k) => { mob.count = Math.floor(N * k); }, raiseFlag() {} };
@@ -369,6 +444,7 @@ export function makeItem(kind) {
   if (kind === 'bread') { const b = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), lam({ color: '#b98745' })); b.scale.set(1.5, .7, 1); it.add(b); }
   if (kind === 'paper') { it.add(box(.3, .06, .22, lam({ color: '#e4dcc8' }))); }
   if (kind === 'box') { it.add(box(.28, .16, .18, lam({ color: '#2a2622' }))); }
+  if (kind === 'flag') { const p = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .42, 5), lam({ color: '#3a2a1a' })); p.position.y = .05; const c = new THREE.Mesh(new THREE.PlaneGeometry(.26, .17), flagMat()); c.position.set(.14, .18, 0); it.add(p, c); }
   return it;
 }
 
