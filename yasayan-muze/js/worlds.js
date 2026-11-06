@@ -211,8 +211,14 @@ function houses(g, side, from, to, x, colors, roof) {
 }
 
 // Fatih'in Gözünden: tepe, otağ, binlerce asker ve son saldırı.
-const SOLDIER = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 4, 1, true); b.translate(0, .62, 0); const h = new THREE.TetrahedronGeometry(.17, 0); h.translate(0, 1.42, 0); const sp = new THREE.PlaneGeometry(.05, 2.3); sp.translate(.22, 1.1, 0); return mergeGeometries([b.toNonIndexed(), h, sp.toNonIndexed()].map(x => { x.deleteAttribute('uv'); return x; })); })();
-const CIVILIAN = (() => { const b = new THREE.CylinderGeometry(.14, .26, 1.25, 4, 1, true); b.translate(0, .62, 0); const h = new THREE.TetrahedronGeometry(.17, 0); h.translate(0, 1.42, 0); return mergeGeometries([b.toNonIndexed(), h].map(x => { x.deleteAttribute('uv'); return x; })); })();
+// Kalabalık figürü: uzaktan insan silüeti, baş ten rengindedir. Geometri hafif tutulur.
+function crowdFigure(spear) {
+  const b = new THREE.CylinderGeometry(.13, .27, 1.2, 6, 1, true); b.translate(0, .6, 0); const h = new THREE.OctahedronGeometry(.125, spear ? 0 : 1); h.scale(.9, 1.1, .95); h.translate(0, 1.4, 0);
+  const parts = [b.toNonIndexed(), h]; if (spear) { const sp = new THREE.PlaneGeometry(.05, 2.3); sp.translate(.22, 1.1, 0); parts.push(sp.toNonIndexed()); }
+  const flags = parts.map((p, i) => { const pos = p.attributes.position, f = new Float32Array(pos.count); if (i === 1) for (let k = 0; k < pos.count; k++) f[k] = pos.getY(k) < 1.43 ? 1 : 0; return f; }); parts.forEach((p, i) => { p.deleteAttribute('uv'); p.setAttribute('aHead', new THREE.BufferAttribute(flags[i], 1)); }); return mergeGeometries(parts);
+}
+const SOLDIER = crowdFigure(true);
+const CIVILIAN = crowdFigure(false);
 function army(n, make, enter = false, base = SOLDIER) {
   const geo = base.clone(), w = new Float32Array(n * 4), ax = new Float32Array(n), m = new THREE.InstancedMesh(geo, lam({ color: '#fff', side: THREE.DoubleSide }), n), M = new THREE.Matrix4(), c = new THREE.Color();
   const uni = { uT: { value: 0 } };
@@ -220,8 +226,8 @@ function army(n, make, enter = false, base = SOLDIER) {
   geo.setAttribute('aW', new THREE.InstancedBufferAttribute(w, 4)); geo.setAttribute('aX', new THREE.InstancedBufferAttribute(ax, 1));
   m.material.onBeforeCompile = (s) => {
     s.uniforms.uT = uni.uT;
-    s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vColor * .32;');
-    s.vertexShader = 'attribute vec4 aW; attribute float aX; uniform float uT;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vColor * .2;');
+    s.vertexShader = 'attribute vec4 aW; attribute float aX; attribute float aHead; uniform float uT;\n' + s.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n vColor = mix(vColor, vec3(.3, .2, .14), aHead);').replace('#include <begin_vertex>', `#include <begin_vertex>
       float p = max(0., uT - aW.x), d = min(p * aW.y, aW.z), r = max(0., uT - aW.w) * aW.y * 1.3; d = max(0., d - r);
       transformed.z -= d; if (aW.y > 0. && p > 0.) transformed.y += abs(sin(uT * 6. + aW.x * 9.)) * .12; transformed.x -= aX * smoothstep(.45, .95, d / max(aW.z, .01))${enter ? '; if (aW.y > 0. && d >= aW.z - .02) transformed.y -= 40.' : ''};`);
   };
@@ -323,24 +329,25 @@ export function buildAnkara() {
 export function buildMeclis() {
   const g = new THREE.Group(), floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 18), lam(T.pbr(T.wood(8, 10), 1.4))); floor.rotation.x = -Math.PI / 2; g.add(floor);
   const wall = lam(T.pbr(T.plasterTone('#a8987e', 3, 2), 1.2)), dark = lam({ color: '#3a2a1e' }), wood = lam({ map: T.wood(3, 1) });
-  g.add(box(14, 6.5, .3, wall, 0, 3.25, -9), box(14, 6.5, .3, wall, 0, 3.25, 9), box(.3, 6.5, 18, wall, -7, 3.25, 0), box(.3, 6.5, 18, wall, 7, 3.25, 0), box(14, .2, 18, lam({ color: '#6a5a48' }), 0, 6.5, 0));
+  g.add(box(14, 6.5, .3, wall, 0, 3.25, -9), box(14, 6.5, .3, wall, 0, 3.25, 9), box(.3, 6.5, 18, wall, -7, 3.25, 0), box(.3, 6.5, 18, wall, 7, 3.25, 0), box(14, .2, 18, new THREE.MeshBasicMaterial({ color: '#4a3a2a' }), 0, 6.5, 0));
+  for (let z = -7.5; z < 9; z += 3) g.add(box(14, .22, .3, dark, 0, 6.36, z));
   for (let z = -7; z < 9; z += 3.2) for (const s of [-1, 1]) { g.add(box(.06, 2.4, 1.3, new THREE.MeshBasicMaterial({ color: '#141a2c' }), s * 6.84, 3.3, z), box(.1, 2.6, 1.5, dark, s * 6.86, 3.3, z)); }
   // Kürsü ve Divan
   g.add(box(10, .5, 3, lam({ map: T.wood(5, 2) }), 0, .25, -7), box(1.4, 1.2, .8, wood, 0, 1.1, -5.9), box(6, .9, 1, wood, 0, .95, -7.6));
   const benches = []; for (let r = 0; r < 6; r++) for (const s of [-1, 1]) benches.push([s * 3.2, .4, -3 + r * 1.6]); ring(g, 0, wood, benches, 4.6, .8, .55);
   flagPole(g, -3.2, .5, -8.1, 3.4, 1.4);
   const actors = [], hero = placed(actors, g), hats = ['#8c1f1c', '#23202a', '#8c1f1c'];
-  [[-1.6, -1.8], [2.6, -1], [-4.4, .4], [4.4, 1.6], [-2.4, 2.2], [2.2, 3.4]].forEach(([x, z], i) => hero({ robe: ['#2b2b33', '#3a3f4a', '#3b3430'][i % 3], cap: hats[i % 3], hat: 'fez', hair: ['#3a2a1e', '#6a6258'][i % 2] }, x, z, 3.14, i % 2 ? 'Interact' : 'Idle_Neutral'));
+  [[-1.5, -.6], [2.6, 1], [-3.6, 2.6], [4.5, -.6], [-4.8, -2.2], [3, 4.2]].forEach(([x, z], i) => hero({ robe: ['#2b2b33', '#3a3f4a', '#3b3430'][i % 3], cap: hats[i % 3], hat: 'fez', hair: ['#3a2a1e', '#6a6258'][i % 2] }, x, z, 3.14, i % 2 ? 'Interact' : 'Idle_Neutral'));
   hero({ robe: '#26262c', cap: '#8c1f1c', hat: 'fez' }, 1.4, -7.8, 0, 'Interact');
-  const rows = []; for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2 === 0) rows.push([(c < 2 ? -5 : 1.6) + (c % 2) * 2.4, 0, -2.5 + r * 1.6]); rows.forEach(([x, , z], i) => { const f = figure({ robe: ['#2b2b33', '#3a3f4a', '#3b3430', '#23232a'][i % 4], cap: i % 3 ? '#8c1f1c' : '#23202a', hat: 'bork' }); f.position.set(x, 0, z); f.rotation.y = Math.PI; g.add(f); });
-  const lamps = [[-3.5, -3], [3.5, -3], [-3.5, 4], [3.5, 4]].map(([x, z]) => { const l = glow(1.8, '255,214,150'); l.position.set(x, 5.2, z); g.add(l, box(.04, 1.3, .04, dark, x, 5.85, z)); return l; });
+  const rows = []; for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2 === 0) rows.push([(c < 2 ? -4.9 : 1.5) + (c % 2) * 2.3, 0, -2.2 + r * 1.6]); rows.forEach(([x, , z], i) => { const f = figure({ robe: ['#2b2b33', '#3a3f4a', '#3b3430', '#23232a'][i % 4], cap: i % 3 ? '#8c1f1c' : '#23202a', hat: 'bork' }); f.position.set(x, 0, z); f.rotation.y = Math.PI; g.add(f); });
+  const lamps = [[-3.5, -3], [3.5, -3], [-3.5, 4], [3.5, 4]].map(([x, z]) => { const l = glow(1.1, '255,190,110'); l.material.opacity = .55; l.position.set(x, 5.2, z); g.add(l, box(.04, 1.3, .04, dark, x, 5.85, z)); return l; });
   motes(g, 40, [-6, 6], [.5, 5], [-8, 8], '#ffe2b0', .04);
   contactShadows(g, rows.map(([x, , z]) => [x, 0, z, .7]));
   bakeStatic(g);
   const main = new THREE.SpotLight('#ffdcb0', 70, 22, 1.4, .7, 1.2); main.position.set(0, 6.2, 0); main.target.position.set(0, 0, -2); main.castShadow = true; main.shadow.mapSize.set(1024, 1024); main.shadow.bias = -.0008; g.add(main, main.target, new THREE.HemisphereLight('#d6c4a8', '#2a1c14', 1.1));
-  return { group: g, groups: [], actors, floorY: 0, fog: new THREE.Fog('#1b140e', 20, 60), bg: '#120d0a', bounds: { x: [-6, 6], z: [-7, 7] },
+  return { group: g, groups: [], actors, floorY: 0, fog: new THREE.Fog('#1b140e', 20, 60), bg: '#120d0a', bounds: { x: [-.75, .75], z: [-4.6, 8] },
     climax(sound) { sound.applause(7); sound.chime(); }, reset() {},
-    tick(dt, t) { runActors(actors, dt); lamps.forEach((l, i) => l.scale.setScalar(1.8 + Math.sin(t * 6 + i) * .08)); } };
+    tick(dt, t) { runActors(actors, dt); lamps.forEach((l, i) => l.scale.setScalar(1.1 + Math.sin(t * 6 + i) * .05)); } };
 }
 
 export function buildCity() {

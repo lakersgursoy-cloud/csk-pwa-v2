@@ -205,3 +205,5 @@ export function meclisFacade() {
   return tex(c);
 }
 export function adobe(seed) { const [c, g] = canvas(256, 256); g.fillStyle = ['#a18c72', '#8f7c66', '#b09a7c'][seed % 3]; g.fillRect(0, 0, 256, 256); speckle(g, 256, 256, 3000, .1); g.fillStyle = '#4a3324'; g.fillRect(0, 104, 256, 8); for (let x = 12; x < 256; x += 60) g.fillRect(x, 0, 7, 256); g.fillStyle = '#1b1a1e'; g.fillRect(48, 26, 44, 60); g.fillRect(160, 26, 44, 60); g.fillStyle = '#3a2619'; g.fillRect(100, 140, 58, 116); return tex(c); }
+
+export function crate() { const [c, g] = canvas(256, 256); g.fillStyle = '#6a4a2c'; g.fillRect(0, 0, 256, 256); speckle(g, 256, 256, 2000, .12); g.fillStyle = '#2f1f12'; for (let y = 0; y < 256; y += 62) g.fillRect(0, y, 256, 5); g.fillStyle = '#4a321d'; g.fillRect(0, 0, 18, 256); g.fillRect(238, 0, 18, 256); g.fillRect(0, 0, 256, 18); g.fillRect(0, 238, 256, 18); g.fillStyle = '#1f150c'; for (const [x, y] of [[9, 9], [247, 9], [9, 247], [247, 247]]) { g.beginPath(); g.arc(x, y, 4, 0, 7); g.fill(); } return tex(c); }

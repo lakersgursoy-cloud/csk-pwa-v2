@@ -181,9 +181,9 @@ export const CHAPTERS = {
       },
       katip: {
         label: 'Meclis kâtibi', model: 'adv', robe: '#2b2b33', cap: '#8c1f1c', hat: 'fez', sleeve: '#2b2b33',
-        world: 'meclis', floorY: 0, bounds: { x: [-6, 6], z: [-7, 7] }, spawn: [-4.5, 5], face: [0, -8],
+        world: 'meclis', floorY: 0, bounds: { x: [-.75, .75], z: [-4.6, 8] }, spawn: [0, 7.2], face: [0, -8],
         wake: 'Meclis salonundasın. Tartışma bir buçuk saattir sürüyor. Elinde komisyonun kâğıtları var.',
-        item: { kind: 'paper', label: 'Komisyon kâğıtları', at: [-4.8, 3] }, target: { label: 'Kâğıtları Divan’a ver', at: [1.8, 1.4, -6.2] },
+        item: { kind: 'paper', label: 'Komisyon kâğıtları', at: [-1.7, 7.6] }, target: { label: 'Kâğıtları Divan’a ver', at: [1.8, 1.4, -6.2] },
         carry: 'Kâğıtları kürsünün yanındaki Divan masasına götür.',
         prompt: 'Eski arkadaşın bir vekil kulağına eğiliyor: “Dışarıda gazeteciler ne olduğunu soruyor.” Salonda kalman gerekiyor.',
         options: {

@@ -91,7 +91,7 @@ const CLIMB = [
   { at: [3, 8.2, -38.9], to: [3, 8.5, -41, 8.5], face: [3, 40] },
 ];
 // Karakter sahnesi nesneleri: her geçişte etkin dünyaya taşınır.
-const prop = { group: new THREE.Group(), crate: box(1.1, .7, .7, lit({ color: '#5a3d22' })), kinds: {}, itemGlow: glow(.7, '255,210,120'), targetGlow: glow(1.3, '255,200,110'), climaxGlow: glow(1, '255,150,70') };
+const prop = { group: new THREE.Group(), crate: box(1.1, .7, .7, lit(T.pbr(T.crate(), 2))), kinds: {}, itemGlow: glow(.7, '255,210,120'), targetGlow: glow(1.3, '255,200,110'), climaxGlow: glow(1, '255,150,70') };
 const pHit = (r) => new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
 Object.assign(prop, { itemHit: pHit(.5), targetHit: pHit(1), climaxHit: pHit(.9), trophyHit: pHit(.6) });
 prop.group.add(prop.crate, prop.itemGlow, prop.targetGlow, prop.climaxGlow, prop.itemHit, prop.targetHit, prop.climaxHit, prop.trophyHit);
