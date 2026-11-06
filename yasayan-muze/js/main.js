@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { advance, initialState, currentCharacter } from './story.js';
 import { CHAPTERS } from './chapters.js';
+import * as T from './textures.js';
 import { buildMuseum, buildSiege, buildCity, buildParis, figure, glow, box, makeHand, makeItem } from './worlds.js';
 import { Panel } from './ui.js';
 import { Sound } from './audio.js';
@@ -29,13 +30,17 @@ let fadeJob = null; const timers = [];
 const fade = (to, s) => new Promise(res => { fadeJob = { from: veil.material.opacity, to, s, t: 0, res }; });
 const wait = (s) => new Promise(r => { timers.push({ t: s, r }); });
 
+// Akıcı harekette görüş kenarını karartarak mide bulantısını azaltır.
+const tunnel = new THREE.Mesh(new THREE.PlaneGeometry(.5, .5), new THREE.MeshBasicMaterial({ map: T.vignette(), transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }));
+tunnel.position.z = -.15; tunnel.renderOrder = 998; camera.add(tunnel);
+let moving = 0;
 // Altyazı ve seçim panelleri dünyada sabit durur; rahatsız edici biçimde kafaya kilitlenmez.
 const sub = new Panel(1.35, .5); sub.visible = false; scene.add(sub);
 const headPos = new THREE.Vector3(), headDir = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 function head() { camera.getWorldPosition(headPos); camera.getWorldDirection(headDir); headDir.y = 0; headDir.normalize(); }
 function place(o, dist, dy = -.2, side = 0) { head(); o.position.copy(headPos).addScaledVector(headDir, dist); o.position.y += dy; o.position.x += -headDir.z * side; o.position.z += headDir.x * side; o.lookAt(headPos.x, o.position.y, headPos.z); }
 let subT = 0, lastSay = '';
-function say(text, title, secs = 6) { sub.set(text, title); place(sub, 1.8, -.34); sub.visible = true; subT = secs; lastSay = text; }
+function say(text, title, secs = 6) { sound.narrate(text); sub.set(text, title); place(sub, 1.8, -.34); sub.visible = true; subT = secs; lastSay = text; }
 const hint = (t) => { $('hud').textContent = renderer.xr.isPresenting ? '' : t; };
 
 // Etkileşim
@@ -46,7 +51,7 @@ tick();
 on(museum.comfort, 'Hareket biçimi', () => { mode = mode === 'akici' ? 'isinlanma' : 'akici'; save({ ...load(), mode }); tick(); sound.chime(); }, () => world === museum);
 for (const [id, ch] of Object.entries(CHAPTERS)) {
   on(museum.doors[id].userData.hit, `${ch.year} · ${ch.place}`, () => openDoor(id), () => state.stage === 'museum' && !busy);
-  on(museum.pedestals[id].hit, ch.trophy.name, () => replay(id), () => world === museum && !!state.done[id] && !busy);
+  on(museum.pedestals[id].hit, ch.trophy.name, () => replay(id), () => world === museum && !!state.done[id] && !busy).max = 4.5;
 }
 const hasTrophy = (id) => { museum.pedestals[id].map.visible = museum.pedestals[id].glow.visible = !!state.done[id]; museum.pedestals[id].glow.material.opacity = .3; };
 Object.keys(CHAPTERS).forEach(hasTrophy);
@@ -121,7 +126,7 @@ async function enter(stage) {
   const ch = CHAPTERS[state.chapter], c = currentCharacter(state), me = ++token;
   if (stage === 'traveller') {
     const w = worlds[ch.world]; w.reset(); heard.clear(); prop.group.parent?.remove(prop.group); showTraces(state.chapter); setPersona(false, '#264a66');
-    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient('camp'); allHands().forEach(h => { h.visible = true; });
+    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient(ch.world === 'paris' ? 'crowd' : 'camp'); allHands().forEach(h => { h.visible = true; });
     await fade(0, 1.2); say(ch.arrive.text, 'Zaman Yolcusu', 7); hint('Çevreyi dinle, sonra içine gireceğin hayatı seç.');
     await wait(7); if (token === me) say('Işıldayan izlerden birine dokun. İstediğin zaman dönüp başka birini seçebilirsin.', 'Zaman Yolcusu', 8);
   } else if (stage === 'wake') {
@@ -157,12 +162,15 @@ async function enter(stage) {
 const ray = new THREE.Raycaster(), tmpM = new THREE.Matrix4(), controllers = [], hover = new Panel(.9, .19, { size: 76 }); hover.visible = false; scene.add(hover);
 function pick(origin, dir) {
   ray.set(origin, dir); ray.far = 60; let best = null;
-  for (const it of items) { if (!it.active() || !it.hit.visible) continue; if (it.hit.parent && !visibleChain(it.hit)) continue; const h = ray.intersectObject(it.hit, false)[0]; if (h && (!best || h.distance < best.d)) best = { it, d: h.distance, point: h.point }; }
+  for (const it of items) { if (!it.active() || !it.hit.visible) continue; if (it.hit.parent && !visibleChain(it.hit)) continue; const h = ray.intersectObject(it.hit, false)[0]; if (h && h.distance > (it.max ?? 99)) continue; if (h && (!best || h.distance < best.d)) best = { it, d: h.distance, point: h.point }; }
   return best;
 }
 const visibleChain = (o) => { for (let p = o.parent; p; p = p.parent) if (p.visible === false) return false; return true; };
 function pulse(v, ms) { for (const c of controllers) c.source?.gamepad?.hapticActuators?.[0]?.pulse?.(v, ms); }
 const marker = new THREE.Mesh(new THREE.RingGeometry(.25, .33, 24), new THREE.MeshBasicMaterial({ color: '#8fd0ff', side: THREE.DoubleSide, fog: false })); marker.rotation.x = -Math.PI / 2; marker.visible = false; scene.add(marker);
+const arcPts = new Float32Array(66), arcGeo = new THREE.BufferGeometry(); arcGeo.setAttribute('position', new THREE.BufferAttribute(arcPts, 3));
+const arc = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({ color: '#8fd0ff', transparent: true, opacity: .8, fog: false })); arc.frustumCulled = false; arc.visible = false; scene.add(arc);
+function drawArc(from, to) { for (let i = 0; i < 22; i++) { const t = i / 21; arcPts.set([from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t + Math.sin(t * Math.PI) * .55, from.z + (to.z - from.z) * t], i * 3); } arcGeo.attributes.position.needsUpdate = true; arc.visible = true; }
 const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]);
 for (let i = 0; i < 2; i++) {
   const c = renderer.xr.getController(i), grip = renderer.xr.getControllerGrip(i), line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: '#ffe6b0' })), h = makeHand();
@@ -186,16 +194,18 @@ function clampRig() { const b = bounds; rig.position.x = THREE.MathUtils.clamp(r
 function moveXZ(dx, dz, dt, speed) { D.set(dx, 0, dz); if (D.lengthSq() < .01) return; D.applyAxisAngle(UP, rigYaw()); rig.position.addScaledVector(D, speed * dt); clampRig(); }
 function rigYaw() { if (!renderer.xr.isPresenting) return rig.rotation.y; head(); return Math.atan2(-headDir.x, -headDir.z); }
 function xrInput(dt) {
-  marker.visible = false;
+  marker.visible = false; arc.visible = false;
   for (const st of controllers) {
     if (!st.source) { st.line.visible = false; continue; }
     tmpM.identity().extractRotation(st.c.matrixWorld); O.setFromMatrixPosition(st.c.matrixWorld); D.set(0, 0, -1).applyMatrix4(tmpM);
     const h = pick(O, D); st.hover = h; st.line.visible = true; st.line.scale.z = h ? h.d : 2.2;
     if (h && !hover.visible) { hover.set(h.it.label); hover.position.copy(h.point).lerp(O, .08); hover.position.y += .22; hover.lookAt(headPos); hover.visible = true; }
     const g = st.source.gamepad; if (!g) continue; const ax = g.axes, x = ax[2] ?? 0, y = ax[3] ?? 0, isLeft = st.source.handedness === 'left';
-    if (isLeft && mode === 'akici') moveXZ(x, y, dt, 2.1);
+    st.hand ??= hands[controllers.indexOf(st)]; st.hand.userData.setGrip(Math.max(g.buttons[0]?.value ?? 0, g.buttons[1]?.value ?? 0));
+    if (h && h.it !== st.lastHover) pulse(.12, 12); st.lastHover = h?.it;
+    if (isLeft && mode === 'akici') { moveXZ(x, y, dt, 2.1); if (Math.hypot(x, y) > .15) moving = 1; }
     else if (mode === 'isinlanma') {
-      if (y < -.6) { st.aiming = true; const t = (floorY - O.y) / Math.min(D.y, -.04), d = Math.min(t, 9); marker.position.set(O.x + D.x * d, floorY + .02, O.z + D.z * d); const b = bounds; marker.position.x = THREE.MathUtils.clamp(marker.position.x, b.x[0], b.x[1]); marker.position.z = THREE.MathUtils.clamp(marker.position.z, b.z[0], b.z[1]); marker.visible = true; }
+      if (y < -.6) { st.aiming = true; const t = (floorY - O.y) / Math.min(D.y, -.04), d = Math.min(t, 9); marker.position.set(O.x + D.x * d, floorY + .02, O.z + D.z * d); const b = bounds; marker.position.x = THREE.MathUtils.clamp(marker.position.x, b.x[0], b.x[1]); marker.position.z = THREE.MathUtils.clamp(marker.position.z, b.z[0], b.z[1]); marker.visible = true; drawArc(O, marker.position); }
       else if (st.aiming) { st.aiming = false; head(); rig.position.x += marker.position.x - headPos.x; rig.position.z += marker.position.z - headPos.z; }
     }
     if (!isLeft) { if (Math.abs(x) > .7 && !st.turned) { st.turned = true; head(); const a = x > 0 ? -Math.PI / 6 : Math.PI / 6, dx = rig.position.x - headPos.x, dz = rig.position.z - headPos.z, c = Math.cos(a), s = Math.sin(a); rig.rotation.y += a; rig.position.x = headPos.x + dx * c + dz * s; rig.position.z = headPos.z - dx * s + dz * c; } if (Math.abs(x) < .3) st.turned = false; }
@@ -225,8 +235,9 @@ function animate(dt) {
       world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); } });
     }
   }
-  hover.visible = false;
+  hover.visible = false; moving = 0;
   if (renderer.xr.isPresenting) xrInput(dt); else deskInput(dt);
+  tunnel.material.opacity += (moving * .85 - tunnel.material.opacity) * Math.min(1, dt * 8); tunnel.visible = tunnel.material.opacity > .01;
 }
 let statueSpoke = false;
 
@@ -248,4 +259,4 @@ $('vr').onclick = () => begin(true).catch(e => { $('giris').hidden = false; $('b
 navigator.xr?.isSessionSupported('immersive-vr').then(ok => { $('vr').disabled = !ok; if (!ok) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.'; }).catch(() => {});
 if (!navigator.xr) $('bilgi').textContent = 'VR için bu sayfayı Meta Quest 3 tarayıcısında aç.';
 
-if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, get said() { return lastSay; }, items, rig, camera, renderer, prop, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };
+if (TEST) window.__muze = { get state() { return state; }, get world() { return Object.keys(worlds).find(k => worlds[k] === world); }, get mode() { return mode; }, get busy() { return busy; }, get said() { return lastSay; }, items, rig, camera, renderer, prop, tunnel, hideSub() { sub.visible = false; subT = 0; }, activate(label) { const i = items.find(x => x.label === label && x.active()); if (!i) return false; i.fn(); return true; }, info: () => renderer.info.render };

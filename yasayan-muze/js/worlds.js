@@ -1,39 +1,78 @@
 import * as THREE from 'three';
 import * as T from './textures.js';
 import { Panel } from './ui.js';
+import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
 
 const lam = (o) => new THREE.MeshLambertMaterial(o);
 export const box = (w, h, d, m, x = 0, y = 0, z = 0) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); return b; };
 const hitbox = (r, x, y, z) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); m.position.set(x, y, z); return m; };
 export const glow = (size, color) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.soft(color), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); s.scale.setScalar(size); return s; };
 
-const figureGeo = {
-  body: new THREE.CylinderGeometry(.17, .3, 1.25, 8), head: new THREE.SphereGeometry(.115, 10, 8),
-  arm: new THREE.CylinderGeometry(.05, .045, .62, 6), cap: new THREE.CylinderGeometry(.1, .135, .24, 8),
-  turban: new THREE.SphereGeometry(.16, 10, 6), helm: new THREE.SphereGeometry(.13, 10, 6, 0, 6.3, 0, 1.7),
-};
+// İnsan figürü iki parçadır: gövde ve baş. Parçalar tek geometride birleşir, renkler köşe rengindedir.
+const figMat = lam({ vertexColors: true }), statueMat = lam({ color: '#c8c2b5' });
+function paint(geo, color, m) { const c = new THREE.Color(color), n = geo.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) c.toArray(a, i * 3); geo.setAttribute('color', new THREE.BufferAttribute(a, 3)); if (m) geo.applyMatrix4(m); return geo.index ? geo.toNonIndexed() : geo; }
+const place4 = (x, y, z, rx = 0, ry = 0, rz = 0, s = [1, 1, 1]) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(...s));
+const ROBE = [[.001, 1.36], [.14, 1.34], [.2, 1.28], [.19, 1.12], [.145, .98], [.15, .92], [.2, .75], [.26, .42], [.3, .14], [.28, .12]].map(([x, y]) => new THREE.Vector2(x, y));
 export function figure({ robe = '#7b2e22', cap = '#d8ccb2', hat = 'bork', skin = '#b98a66', stone = false } = {}) {
-  const f = new THREE.Group(), R = lam({ color: robe }), S = lam({ color: skin }), C = lam({ color: cap });
-  const body = new THREE.Mesh(figureGeo.body, R); body.position.y = .72; f.add(body);
-  const head = new THREE.Group(); head.position.y = 1.5; f.add(head); f.userData.head = head;
-  head.add(new THREE.Mesh(figureGeo.head, S));
-  const h = new THREE.Mesh(hat === 'turban' ? figureGeo.turban : hat === 'helm' ? figureGeo.helm : figureGeo.cap, C);
-  h.position.y = hat === 'bork' ? .15 : .05; if (hat === 'turban') h.scale.y = .72; head.add(h);
-  for (const s of [-1, 1]) { const a = new THREE.Mesh(figureGeo.arm, R); a.position.set(s * .24, 1.05, .03); a.rotation.z = s * .14; f.add(a); }
-  if (stone) f.traverse(o => { if (o.isMesh) o.material = lam({ color: '#c8c2b5' }); });
-  f.userData.phase = Math.random() * 7; return f;
+  const f = new THREE.Group(), darker = new THREE.Color(robe).multiplyScalar(.55).getStyle(), parts = [
+    paint(new THREE.LatheGeometry(ROBE, 10), robe),
+    paint(new THREE.CylinderGeometry(.16, .16, .05, 10), darker, place4(0, .95, 0)),
+    paint(new THREE.CylinderGeometry(.07, .08, .14, 7), '#2a2019', place4(-.1, .07, 0)), paint(new THREE.CylinderGeometry(.07, .08, .14, 7), '#2a2019', place4(.1, .07, 0)),
+  ];
+  for (const s of [-1, 1]) {
+    parts.push(paint(new THREE.CylinderGeometry(.062, .05, .34, 7), robe, place4(s * .23, 1.14, 0, 0, 0, s * .22)));
+    parts.push(paint(new THREE.CylinderGeometry(.05, .04, .3, 7), robe, place4(s * .27, .86, .06, -.5, 0, s * .06)));
+    parts.push(paint(new THREE.SphereGeometry(.045, 6, 5), skin, place4(s * .28, .72, .14)));
+  }
+  const body = new THREE.Mesh(mergeGeometries(parts), stone ? statueMat : figMat); f.add(body);
+  const hp = [paint(new THREE.SphereGeometry(.105, 10, 8), skin, place4(0, 0, 0, 0, 0, 0, [.92, 1.08, .98])), paint(new THREE.CylinderGeometry(.05, .055, .12, 7), skin, place4(0, -.13, 0))];
+  if (hat === 'turban') { hp.push(paint(new THREE.TorusGeometry(.095, .055, 6, 12), cap, place4(0, .055, 0, Math.PI / 2 - .1)), paint(new THREE.SphereGeometry(.095, 8, 6), cap, place4(0, .085, 0, 0, 0, 0, [1, .6, 1]))); }
+  else if (hat === 'helm') { hp.push(paint(new THREE.SphereGeometry(.125, 10, 6, 0, 6.3, 0, 1.65), cap, place4(0, .02, 0)), paint(new THREE.ConeGeometry(.02, .08, 6), cap, place4(0, .15, 0))); }
+  else { hp.push(paint(new THREE.CylinderGeometry(.09, .118, .2, 9), cap, place4(0, .13, 0)), paint(new THREE.TorusGeometry(.115, .018, 5, 12), darker, place4(0, .05, 0, Math.PI / 2))); }
+  const head = new THREE.Group(), hm = new THREE.Mesh(mergeGeometries(hp), stone ? statueMat : figMat); head.position.y = 1.5; head.add(hm); f.add(head);
+  f.userData.head = head; f.userData.dyn = true; f.userData.phase = Math.random() * 7; return f;
+}
+// Temas gölgeleri: figürleri ve nesneleri zemine oturtur, tek çizimdir.
+function contactShadows(g, spots, tex = T.soft('0,0,0')) {
+  const m = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: .55, depthWrite: false, fog: false }), spots.length), M = new THREE.Matrix4();
+  spots.forEach(([x, y, z, s], i) => { M.compose(new THREE.Vector3(x, y + .025, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)), new THREE.Vector3(s, s, 1)); m.setMatrixAt(i, M); }); g.add(m); return m;
+}
+// Toz: havaya hacim katar.
+function motes(g, n, [x0, x1], [y0, y1], [z0, z1], color, size) {
+  const p = new Float32Array(n * 3); for (let i = 0; i < n; i++) p.set([x0 + Math.random() * (x1 - x0), y0 + Math.random() * (y1 - y0), z0 + Math.random() * (z1 - z0)], i * 3);
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  const o = new THREE.Points(geo, new THREE.PointsMaterial({ color, size, transparent: true, opacity: .4, depthWrite: false, map: T.soft('255,255,255'), blending: THREE.AdditiveBlending })); o.userData.dyn = true; g.add(o); return o;
+}
+// Hareket etmeyen ağları malzemeye göre birleştirir; Quest'te çizim çağrısını belirgin azaltır.
+export function bakeStatic(root) {
+  root.updateMatrixWorld(true); const groups = new Map(), stale = [];
+  const walk = (o) => { if (o.userData.dyn || o.isSprite || o.isPoints || o.isInstancedMesh) return; if (o.isMesh && o.constructor === THREE.Mesh && o.material.visible && !o.material.transparent) { const k = o.material.uuid; (groups.get(k) || groups.set(k, []).get(k)).push(o); } o.children.forEach(walk); };
+  walk(root);
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    const geos = list.map(m => { const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld); for (const a of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(a)) g.deleteAttribute(a); return g; });
+    const merged = new THREE.Mesh(mergeGeometries(geos), list[0].material); root.add(merged); list.forEach(m => stale.push(m));
+  }
+  for (const m of stale) m.parent.remove(m);
 }
 
 export function buildMuseum() {
   const g = new THREE.Group(), L = 26, W = 13, H = 8, cz = -1;
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, L), lam({ map: T.marbleFloor(W / 2, L / 2) })); floor.rotation.x = -Math.PI / 2; floor.position.z = cz; g.add(floor);
-  const wall = lam({ map: T.plaster(4, 2) }), dark = lam({ color: '#1b1411' }), stone = lam({ color: '#b8ae9c' }), gold = lam({ color: '#a97f2e', emissive: '#2f2108' });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshPhongMaterial({ map: T.marbleFloor(W / 2, L / 2), shininess: 70, specular: '#4a4238' })); floor.rotation.x = -Math.PI / 2; floor.position.z = cz; g.add(floor);
+  const wall = lam(T.pbr(T.plaster(4, 2), 1.4)), dark = lam({ color: '#1b1411' }), stone = lam({ color: '#b8ae9c' }), gold = lam({ color: '#a97f2e', emissive: '#2f2108' });
   for (const s of [-1, 1]) { const m = box(.3, H, L, wall, s * (W / 2 + .15), H / 2, cz); g.add(m); }
   g.add(box(W, H, .3, wall, 0, H / 2, cz - L / 2 - .15), box(W, H, .3, wall, 0, H / 2, cz + L / 2 + .15), box(W, .3, L, dark, 0, H + .15, cz));
   const colG = new THREE.CylinderGeometry(.3, .36, H - .9, 14), cols = new THREE.InstancedMesh(colG, stone, 12), M = new THREE.Matrix4();
   for (let i = 0; i < 12; i++) { M.setPosition((i % 2 ? 1 : -1) * 5.2, (H - .9) / 2 + .45, 10 - (i >> 1) * 4.4); cols.setMatrixAt(i, M); }
   g.add(cols);
   for (const s of [-1, 1]) { g.add(box(.6, H * .06, L, gold, s * (W / 2 - .2), H - .22, cz)); }
+  // Tavan kasetleri, süpürgelik ve ışık sütunları
+  const coffer = lam({ color: '#33261c' }), rib = lam({ color: '#5b4530' });
+  for (let z = 11; z > -14; z -= 4) g.add(box(W, .35, .28, rib, 0, H - .1, z));
+  for (const x of [-4, 0, 4]) g.add(box(.28, .35, L, rib, x, H - .1, cz));
+  g.add(box(W, .1, L, coffer, 0, H, cz));
+  for (const s of [-1, 1]) g.add(box(.08, .5, L, stone, s * (W / 2 - .03), .25, cz));
+  for (const z of [8, -1, -10]) { const beam = glow(9, '255,225,170'); beam.position.set(0, 5.2, z); beam.scale.set(4.5, 10, 1); beam.material.opacity = .08; g.add(beam); }
   // Yan duvar tabloları
   const frames = [['#3b4a58', '#d0a45e'], ['#57302a', '#c9b48a'], ['#27332c', '#b58a4a'], ['#4a3b52', '#d2b070']];
   frames.forEach(([a, b], i) => {
@@ -69,15 +108,18 @@ export function buildMuseum() {
   const comfort = new Panel(1.3, .46, { size: 50 }); comfort.position.set(W / 2 - .05, 1.45, 8.6); comfort.rotation.y = -Math.PI / 2; g.add(comfort);
   const lights = [[0, 6, 8, 34], [0, 6, -7, 42]].map(([x, y, z, i]) => { const l = new THREE.PointLight('#ffcf9a', i, 26, 1.6); l.position.set(x, y, z); return l; }); g.add(...lights);
   g.add(new THREE.HemisphereLight('#d6c4a8', '#2a1c14', 1.1));
-  return { group: g, bounds: { x: [-6, 6], z: [-12.5, 11] }, floorY: 0, floor, statue, doors: { istanbul: door1453, paris: door1789 }, pedestals, comfort, fog: new THREE.Fog('#17100c', 16, 44), bg: '#120d0a' };
+  contactShadows(g, [[-3, 0, .5, 3], [3, 0, 1, 2.2], [3, 0, -3.4, 2.2], ...Array.from({ length: 12 }, (_, i) => [(i % 2 ? 1 : -1) * 5.2, 0, 10 - (i >> 1) * 4.4, 1.9])]);
+  const dust = motes(g, 90, [-6, 6], [.3, 6], [-13, 11], '#ffe2b0', .05);
+  bakeStatic(g);
+  return { dust, group: g, bounds: { x: [-6, 6], z: [-12.5, 11] }, floorY: 0, floor, statue, doors: { istanbul: door1453, paris: door1789 }, pedestals, comfort, fog: new THREE.Fog('#17100c', 16, 44), bg: '#120d0a' };
 }
 
 export function buildSiege() {
   const g = new THREE.Group();
   const sky = new THREE.Mesh(new THREE.SphereGeometry(220, 24, 16), new THREE.MeshBasicMaterial({ map: T.duskSky(), side: THREE.BackSide, fog: false })); g.add(sky);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 160), lam({ map: T.dirt(38, 26) })); floor.rotation.x = -Math.PI / 2; floor.position.z = -10; g.add(floor);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(240, 160), lam(T.pbr(T.dirt(38, 26), 1.6))); floor.rotation.x = -Math.PI / 2; floor.position.z = -10; g.add(floor);
   // Hendek, dış sur, iç sur
-  const wa = lam({ map: T.theodosianWall(44, 2.5) }), ta = lam({ map: T.theodosianWall(2.5, 5) }), wb = lam({ map: T.theodosianWall(44, 3.8) }), dark = lam({ color: '#40362b' });
+  const wa = lam(T.pbr(T.theodosianWall(44, 2.5))), ta = lam(T.pbr(T.theodosianWall(2.5, 5))), wb = lam(T.pbr(T.theodosianWall(44, 3.8))), dark = lam({ color: '#40362b' });
   g.add(box(240, .2, 15, lam({ color: '#2d2720' }), 0, .02, -33), box(240, 2.2, .8, dark, 0, 1.1, -26.5));
   g.add(box(240, 8.5, 2.4, wa, 0, 4.25, -41), box(240, 13, 4.8, wb, 0, 6.5, -52));
   const towers = [], merlons = new THREE.InstancedMesh(new THREE.BoxGeometry(.9, 1.1, .7), lam({ color: '#6f6658' }), 180), M = new THREE.Matrix4(); let mi = 0;
@@ -114,6 +156,12 @@ export function buildSiege() {
   for (const [x, z, r] of [[-6, 0, .4], [7, 4, 2.5], [-13, 3, 1], [12, -3, 3.5], [0, 3, 1.5], [-15, -8, 2], [15, -12, 4]]) add({ robe: ['#6e2a21', '#27415a', '#5a4a30'][Math.abs(x) % 3], hat: x % 2 ? 'bork' : 'turban' }, x, z, r);
   // Sur üzerindeki savunmacılar
   for (let x = -30; x <= 30; x += 10) { const f = figure({ robe: '#4e4b53', cap: '#8d8d92', hat: 'helm' }); f.position.set(x + 1.5, 13, -50.9); g.add(f); }
+  // Duvardan görülen ordugâh ateşleri ve toz
+  const far = new Float32Array(900); for (let i = 0; i < 300; i++) far.set([-140 + Math.random() * 280, .8, 16 + Math.random() * 110], i * 3);
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(far, 3)); const campfires = new THREE.Points(fg, new THREE.PointsMaterial({ color: '#ff9440', size: 1.1, map: T.soft('255,255,255'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); campfires.userData.dyn = true; g.add(campfires);
+  motes(g, 120, [-24, 24], [.4, 7], [-26, 14], '#ffc890', .08);
+  contactShadows(g, [...people.map(p => [p.position.x, 0, p.position.z, 1.1]), [4, 0, -11.5, 6], ...tents.map(([x, z]) => [x, 0, z, 7]), ...[[8.5, -8], [9.8, -7.2], [9, -6.2], [8.7, -7.1]].map(([x, z]) => [x, 0, z, 2])]);
+  bakeStatic(g);
   const smoke = makeSmoke(g, 10), flash = glow(11, '255,210,140'); flash.position.copy(muzzle); flash.visible = false; g.add(flash);
   g.add(new THREE.HemisphereLight('#c8a68a', '#32281e', 1.45)); const sun = new THREE.DirectionalLight('#ffb878', 1.6); sun.position.set(-40, 16, 60); g.add(sun);
   let flashT = 0;
@@ -144,7 +192,7 @@ function houses(g, side, from, to, x, colors, roof) {
 export function buildCity() {
   const g = new THREE.Group();
   g.add(new THREE.Mesh(new THREE.SphereGeometry(200, 20, 12), new THREE.MeshBasicMaterial({ map: T.duskSky(), side: THREE.BackSide, fog: false })));
-  const f = new THREE.Mesh(new THREE.PlaneGeometry(40, 120), lam({ map: T.cobbles(18, 54) })); f.rotation.x = -Math.PI / 2; f.position.z = -30; g.add(f);
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(40, 120), lam(T.pbr(T.cobbles(18, 54), 3))); f.rotation.x = -Math.PI / 2; f.position.z = -30; g.add(f);
   const walls = [T.plasterTone('#a08a6c', 3, 3), T.plasterTone('#8d7a64', 3, 3), T.plasterTone('#b29c7c', 3, 3)];
   houses(g, -1, 10, -20, 7.5, walls, '#6e3a2a'); houses(g, 1, 10, -20, 7.5, walls, '#5c3226');
   g.add(box(8, 5, .4, lam({ map: walls[0] }), 0, 2.5, 13));
@@ -159,8 +207,11 @@ export function buildCity() {
   g.add(box(1.5, 2.5, .15, lam({ map: T.wood(1, 1) }), 3.6, 1.25, -8.8));
   const people = [eleni];
   for (const [x, z, r, c] of [[-2.8, -4, 1.3, '#4d3b5b'], [-3.4, -12, .6, '#3e4f4a'], [3.3, 0, -2, '#6a3a30'], [1.5, -15, 3, '#51443a'], [-1.5, -17, 3.1, '#3d3a4a']]) { const p = figure({ robe: c, hat: 'turban', cap: '#ddd2bc' }); p.position.set(x, 0, z); p.rotation.y = r; g.add(p); people.push(p); }
+  motes(g, 70, [-4, 4], [.4, 5], [-18, 10], '#ffc890', .05);
+  contactShadows(g, [...people.map(p => [p.position.x, 0, p.position.z, 1.1]), ...Array.from({ length: 12 }, (_, i) => [i % 2 ? 4.6 : -4.6, 0, 10 - (i >> 1) * 5, 3])]);
   const smoke = makeSmoke(g, 8), light = new THREE.PointLight('#ff9550', 30, 16, 1.6); light.position.set(-3, 2.6, 5); g.add(light);
   g.add(new THREE.HemisphereLight('#c8a68a', '#2c221a', 1.5)); const sun = new THREE.DirectionalLight('#ffb878', 1.3); sun.position.set(-20, 18, 40); g.add(sun);
+  bakeStatic(g);
   return { group: g, groups: [], floorY: 0, fog: new THREE.Fog('#7c5a48', 22, 120), bg: '#3a2c2c',
     climax(sound) { sound.thud(40, 2.4, 1.2, .25); smoke.burst(new THREE.Vector3(0, 11, -22), 8, 1.1); },
     reset() { smoke.clear(); },
@@ -170,17 +221,17 @@ export function buildCity() {
 export function buildParis() {
   const g = new THREE.Group();
   g.add(new THREE.Mesh(new THREE.SphereGeometry(220, 20, 12), new THREE.MeshBasicMaterial({ map: T.daySky(), side: THREE.BackSide, fog: false })));
-  const f = new THREE.Mesh(new THREE.PlaneGeometry(90, 130), lam({ map: T.cobbles(40, 58) })); f.rotation.x = -Math.PI / 2; f.position.z = -20; g.add(f);
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(90, 130), lam(T.pbr(T.cobbles(40, 58), 3))); f.rotation.x = -Math.PI / 2; f.position.z = -20; g.add(f);
   const walls = [T.plasterTone('#a39a8a', 3, 3), T.plasterTone('#8f8678', 3, 3), T.plasterTone('#b4a890', 3, 3)];
   houses(g, -1, 13, -30, 18, walls, '#3f4449'); houses(g, 1, 13, -30, 18, walls, '#3f4449');
   g.add(box(30, 7, .5, lam({ map: walls[1] }), 0, 3.5, 15));
   // Bastille: sekiz kule ve hendek. Çağdaş ölçümlere göre çevre binalarla yakın yükseklikteydi.
-  const s = lam({ map: T.ashlar(8, 3) }), Z = -44;
+  const s = lam(T.pbr(T.ashlar(8, 3))), Z = -44;
   g.add(box(36, 15, 16, s, 0, 7.5, Z), box(60, .25, 8, lam({ color: '#2b2a27' }), 0, .06, Z + 11));
   const tg = new THREE.CylinderGeometry(4.2, 4.2, 19, 16);
   for (const [x, z] of [[-18, 8], [-6, 8.5], [6, 8.5], [18, 8], [-18, -8], [-6, -8.5], [6, -8.5], [18, -8]]) { const t = new THREE.Mesh(tg, s); t.position.set(x, 9.5, Z + z); g.add(t); }
   const gate = box(4.4, 6, .5, new THREE.MeshBasicMaterial({ color: '#15110e' }), 0, 3, Z + 12.8); g.add(gate);
-  const bridge = new THREE.Group(); bridge.position.set(0, .35, Z + 12.9); const plank = box(4, .25, 8.5, lam({ map: T.wood(2, 3) }), 0, 0, 4.2); bridge.add(plank); bridge.rotation.x = -Math.PI / 2 + .12; g.add(bridge);
+  const bridge = new THREE.Group(); bridge.position.set(0, .35, Z + 12.9); const plank = box(4, .25, 8.5, lam({ map: T.wood(2, 3) }), 0, 0, 4.2); bridge.add(plank); bridge.rotation.x = -Math.PI / 2 + .12; bridge.userData.dyn = true; g.add(bridge);
   for (const sx of [-1.9, 1.9]) g.add(box(.08, .08, 8, lam({ color: '#222' }), sx, 3.8, Z + 16.6));
   // Pazar tezgâhları ve matbaa
   const wood = lam({ map: T.wood(2, 1) }), cloth = [lam({ color: '#a33c2e' }), lam({ color: '#d8c8a8' }), lam({ color: '#2f4a68' })];
@@ -194,6 +245,9 @@ export function buildParis() {
   const add = (o, x, z, r) => { const p = figure(o); p.position.set(x, 0, z); p.rotation.y = r; g.add(p); people.push(p); return p; };
   add({ robe: '#26303a', cap: '#222' }, -3.4, -9, 1); add({ robe: '#2d3f73', cap: '#1a1a22' }, 6, -16, 2.6); add({ robe: '#5a4a50', hat: 'turban', cap: '#ddd2bc' }, -5, 1, 1.4);
   const groups = [[add({ robe: '#6e2a21', cap: '#c8bda6' }, 8, -2, -1), add({ robe: '#3a3f4a', cap: '#c8bda6' }, 9.2, -1.6, -2)], [add({ robe: '#c8bda6', hat: 'turban', cap: '#ddd2bc' }, -8, -2, 1.2), add({ robe: '#5a4a30', hat: 'turban', cap: '#ddd2bc' }, -9.3, -2.8, .3)]];
+  motes(g, 100, [-16, 16], [.4, 6], [-28, 12], '#ffffff', .06);
+  contactShadows(g, [...people.map(p => [p.position.x, 0, p.position.z, 1.1]), ...base.filter((_, i) => i % 2).map(([x, z]) => [x, 0, z, 1])]);
+  bakeStatic(g);
   const smoke = makeSmoke(g, 10);
   g.add(new THREE.HemisphereLight('#dfe1dc', '#544a3e', 1.7)); const sun = new THREE.DirectionalLight('#fff0d8', 1.4); sun.position.set(30, 40, 30); g.add(sun);
   let drop = 0;
@@ -220,7 +274,8 @@ export function makeItem(kind) {
 export function makeHand() {
   const skin = lam({ color: '#b98a66', transparent: true }), sleeve = lam({ color: '#6c5236', transparent: true }), h = new THREE.Group();
   h.add(box(.075, .028, .09, skin, 0, 0, -.015));
-  for (let i = 0; i < 4; i++) h.add(box(.015, .017, .07, skin, -.027 + i * .018, 0, -.09));
+  const fingers = []; for (let i = 0; i < 4; i++) { const p = new THREE.Group(); p.position.set(-.027 + i * .018, 0, -.058); p.add(box(.015, .017, .07, skin, 0, 0, -.033)); h.add(p); fingers.push(p); }
+  h.userData.setGrip = (v) => { for (const p of fingers) p.rotation.x = -v * 1.25; };
   const th = box(.02, .019, .055, skin, .05, 0, -.03); th.rotation.y = -.6; h.add(th);
   const s = new THREE.Mesh(new THREE.CylinderGeometry(.042, .062, .3, 10), sleeve); s.rotation.x = Math.PI / 2; s.position.z = .19; h.add(s);
   const cuff = new THREE.Mesh(new THREE.TorusGeometry(.046, .009, 6, 12), lam({ color: '#c9b48a', transparent: true })); cuff.position.z = .05; h.add(cuff);

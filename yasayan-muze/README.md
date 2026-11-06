@@ -12,7 +12,9 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Her karakterde görev, karar, kişisel sonuç ve aynı tarihî an
 - Üç karakter bitince ortak final; karakterleri tamamlamak zorunlu değil
 - Müzede kalan iki nesne ve dokununca canlanan anı (tarayıcıda hatırlanır)
-- Işınlanma ve akıcı hareket, 30° adımlı dönüş
+- Işınlanma yayı, akıcı harekette görüş kenarı karartması, 30° adımlı dönüş
+- Tetikle kapanan parmaklar, hedef üzerinde hafif titreşim
+- Cihazda Türkçe ses varsa metinleri okuyan anlatıcı; yoksa altyazı
 
 Yusuf, Nikolas, Eleni, Pierre ve Anna kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
 
@@ -34,7 +36,7 @@ Ekranda: WASD, fare ve tıklama.
 
 ## Dosyalar
 
-`js/story.js` bölüm akışı, `js/worlds.js` sahneler, `js/main.js` girdi ve sahne yönetimi, `js/textures.js` kodla üretilen dokular, `js/audio.js` sesler. Three.js r169 `vendor/` altındadır; derleme adımı yoktur.
+`js/story.js` bölüm akışı, `js/worlds.js` sahneler, `js/main.js` girdi ve sahne yönetimi, `js/textures.js` kodla üretilen dokular ve normal haritaları, `js/audio.js` sesler. Three.js r169 ve BufferGeometryUtils `vendor/` altındadır; derleme adımı yoktur.
 
 ```bash
 node --test yasayan-muze/tests/*.test.mjs

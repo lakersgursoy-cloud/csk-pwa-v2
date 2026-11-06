@@ -10,13 +10,19 @@ export class Sound {
     this.noise = b;
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
+  // Tarayıcıda Türkçe ses varsa metni okur; yoksa oyun yalnızca altyazıyla sürer.
+  narrate(text) {
+    const sp = window.speechSynthesis; if (!sp) return;
+    const v = sp.getVoices().find(x => x.lang?.toLowerCase().startsWith('tr')); sp.cancel(); if (!v) return;
+    const u = new SpeechSynthesisUtterance(text); u.voice = v; u.lang = v.lang; u.rate = .96; sp.speak(u);
+  }
   ambient(kind) {
     if (!this.ctx) return;
     if (this.bed) { const o = this.bed; o.g.gain.setTargetAtTime(0, this.ctx.currentTime, .4); setTimeout(() => o.s.stop(), 1500); this.bed = null; }
     const s = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
-    s.buffer = this.noise; s.loop = true; f.type = 'lowpass'; f.frequency.value = kind === 'camp' ? 700 : 220; g.gain.value = 0;
+    s.buffer = this.noise; s.loop = true; f.type = kind === 'crowd' ? 'bandpass' : 'lowpass'; f.frequency.value = { camp: 700, crowd: 620, museum: 220 }[kind] ?? 220; g.gain.value = 0;
     s.connect(f).connect(g).connect(this.master); s.start();
-    g.gain.setTargetAtTime(kind === 'camp' ? 1.4 : .5, this.ctx.currentTime, 1); this.bed = { s, g };
+    g.gain.setTargetAtTime({ camp: 1.4, crowd: 2.4 }[kind] ?? .5, this.ctx.currentTime, 1); this.bed = { s, g };
   }
   thud(freq = 60, dur = 1, vol = 1, delay = 0) {
     if (!this.ctx) return; const t = this.ctx.currentTime + delay, o = this.ctx.createOscillator(), g = this.ctx.createGain();

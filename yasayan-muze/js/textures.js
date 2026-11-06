@@ -53,11 +53,31 @@ export function wood(rx, ry) {
   for (let i = 0; i < 130; i++) { g.fillStyle = `rgba(${rnd() > .5 ? '120,84,48' : '30,18,8'},.3)`; g.fillRect(0, rnd() * 128, 256, 1 + rnd() * 2); }
   return tex(c, rx, ry);
 }
-export function duskSky() {
-  const [c, g] = canvas(32, 256), s = g.createLinearGradient(0, 0, 0, 256);
-  s.addColorStop(0, '#12182e'); s.addColorStop(.32, '#3a3550'); s.addColorStop(.44, '#a85c3c'); s.addColorStop(.5, '#e0a25a'); s.addColorStop(.53, '#4a3a2e'); s.addColorStop(1, '#2a2118');
-  g.fillStyle = s; g.fillRect(0, 0, 32, 256);
+// Gökyüzü: bulutlar ve güneş ışık yönüyle uyumlu konumdadır (u = .156).
+function paintSky(stops, cloud, sun) {
+  const [c, g] = canvas(1024, 512), s = g.createLinearGradient(0, 0, 0, 512);
+  for (const [o, k] of stops) s.addColorStop(o, k);
+  g.fillStyle = s; g.fillRect(0, 0, 1024, 512);
+  const su = sun && g.createRadialGradient(160, 236, 0, 160, 236, 230);
+  if (su) { su.addColorStop(0, sun); su.addColorStop(.06, sun); su.addColorStop(.2, 'rgba(255,170,90,.5)'); su.addColorStop(1, 'rgba(255,140,70,0)'); g.fillStyle = su; g.fillRect(0, 0, 1024, 512); }
+  for (let i = 0; i < 130; i++) { const x = rnd() * 1024, y = 90 + rnd() * 140, w = 40 + rnd() * 170, h = 3 + rnd() * 11; g.fillStyle = `rgba(${cloud},${.05 + rnd() * .17})`; for (const dx of [0, -1024, 1024]) { g.beginPath(); g.ellipse(x + dx, y, w, h, 0, 0, 7); g.fill(); } }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+export const duskSky = () => paintSky([[0, '#12182e'], [.3, '#3a3550'], [.42, '#a85c3c'], [.49, '#e0a25a'], [.52, '#4a3a2e'], [1, '#2a2118']], '255,190,150', '#fff0c8');
+// Doku parlaklığından normal haritası üretir; taş ve tuğlaya gerçek ışıkla derinlik verir.
+export function pbr(t, strength = 2.2) {
+  const src = t.image, w = Math.min(src.width, 256), h = Math.min(src.height, 256), [c, g] = canvas(w, h); g.drawImage(src, 0, 0, w, h);
+  const d = g.getImageData(0, 0, w, h), L = (x, y) => d.data[(((y + h) % h) * w + ((x + w) % w)) * 4 + 1] / 255, o = g.createImageData(w, h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const dx = (L(x - 1, y) - L(x + 1, y)) * strength, dy = (L(x, y - 1) - L(x, y + 1)) * strength, n = 1 / Math.hypot(dx, dy, 1), i = (y * w + x) * 4;
+    o.data[i] = (dx * n + 1) * 127.5; o.data[i + 1] = (dy * n + 1) * 127.5; o.data[i + 2] = (n + 1) * 127.5; o.data[i + 3] = 255;
+  }
+  g.putImageData(o, 0, 0); const n = new THREE.CanvasTexture(c); n.wrapS = n.wrapT = THREE.RepeatWrapping; n.repeat.copy(t.repeat); n.anisotropy = 4;
+  return { map: t, normalMap: n };
+}
+export function vignette() {
+  const [c, g] = canvas(256, 256), s = g.createRadialGradient(128, 128, 56, 128, 128, 128); s.addColorStop(0, 'rgba(0,0,0,0)'); s.addColorStop(1, 'rgba(0,0,0,1)');
+  g.fillStyle = s; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
 }
 export function soft(color = '255,190,110') {
   const [c, g] = canvas(64, 64), s = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -116,11 +136,7 @@ export function ashlar(rx, ry) {
   for (let y = 0; y < 256; y += 32) for (let x = (y / 32 % 2) * -32; x < 256; x += 64) { const v = 112 + rnd() * 24 | 0; g.fillStyle = `rgb(${v},${v - 4},${v - 12})`; g.fillRect(x + 1, y + 1, 62, 30); }
   speckle(g, 256, 256, 2200, .1); return tex(c, rx, ry);
 }
-export function daySky() {
-  const [c, g] = canvas(32, 256), s = g.createLinearGradient(0, 0, 0, 256);
-  s.addColorStop(0, '#6c8197'); s.addColorStop(.42, '#b3bcbf'); s.addColorStop(.5, '#d9d3c4'); s.addColorStop(.54, '#56504a'); s.addColorStop(1, '#3a342e');
-  g.fillStyle = s; g.fillRect(0, 0, 32, 256); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
+export const daySky = () => paintSky([[0, '#5f778f'], [.4, '#aab6bb'], [.49, '#ddd6c6'], [.52, '#56504a'], [1, '#3a342e']], '245,245,240', null);
 export function drawPamphlet() {
   const [c, g] = canvas(512, 384); g.fillStyle = '#e2d7bd'; g.fillRect(0, 0, 512, 384); speckle(g, 512, 384, 3000, .08);
   g.fillStyle = '#2a211a'; g.textAlign = 'center'; g.font = 'bold 42px Georgia'; g.fillText('AUX ARMES', 256, 90); g.font = '24px Georgia'; g.fillText('Citoyens de Paris', 256, 135);
