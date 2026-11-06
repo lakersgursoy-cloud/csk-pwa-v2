@@ -231,7 +231,7 @@ function animate(dt) {
   } else {
     world.tick(dt, time); prop.itemGlow.material.opacity = .7 + Math.sin(time * 4) * .3;
     if (state.stage === 'traveller') {
-      traces[state.chapter].forEach(t => { t.hl.material.opacity = .32 + Math.sin(time * 3) * .15; t.plate.lookAt(headPos); });
+      traces[state.chapter].forEach(t => { t.hl.material.opacity = .16 + Math.sin(time * 3) * .07; t.plate.lookAt(headPos); });
       world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); } });
     }
   }

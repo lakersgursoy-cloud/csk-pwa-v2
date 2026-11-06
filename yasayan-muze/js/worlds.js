@@ -81,7 +81,7 @@ export function buildMuseum() {
     for (let k = 0; k < 16; k++) x.fillRect(k * 8 + (i * 13) % 7, 64 + (k * 37 % 22), 4, 14);
     const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
     const s = i % 2 ? 1 : -1, z = 8 - (i >> 1) * 9, p = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.95), new THREE.MeshBasicMaterial({ map: tx }));
-    p.position.set(s * (W / 2 - .03), 3, z); p.rotation.y = -s * Math.PI / 2; g.add(box(.06, 2.2, 2.85, gold, s * (W / 2 - .01), 3, z), p);
+    p.position.set(s * (W / 2 - .05), 3, z); p.rotation.y = -s * Math.PI / 2; g.add(box(.06, 2.2, 2.85, gold, s * (W / 2 - .01), 3, z), p);
   });
   // Konuşan heykel
   const statue = figure({ stone: true, hat: 'turban' }); statue.scale.setScalar(1.25); statue.position.set(-3, .7, 0.5); statue.rotation.y = Math.PI / 2 - .1; g.add(statue, box(1.3, .7, 1.3, stone, -3, .35, .5));
