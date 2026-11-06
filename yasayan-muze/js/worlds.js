@@ -265,6 +265,9 @@ function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
   const banners = []; const banner = (x, z, color, y = 9, h = 7) => { const f = new THREE.Group(); f.position.set(x, y, z); const pole = new THREE.Mesh(new THREE.CylinderGeometry(.05, .06, h, 6), lam({ color: '#3a2a1a' })); pole.position.y = h / 2; const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1, 8, 3), new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide })); cloth.position.set(.95, h - .7, 0); f.add(pole, cloth); f.userData.cloth = cloth; root.add(f); banners.push(cloth); return f; };
   for (const [x, z] of [[-5, 8], [5, 8], [-6, 15], [6, 15]]) banner(x, z, '#a81f1c');
   for (const [x, z, r] of [[-3.5, 9.5, 0], [3.5, 9.5, 0], [-5, 13, 1.4], [5, 13, -1.4]]) { const a = makeActor({ robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork', anim: 'Idle_Sword' }); a.root.position.set(x, 9, z); a.root.rotation.y = Math.PI + r; root.add(a.root); actors.push(a); }
+  // Fatih: kırmızı kaftan, kürk, beyaz kavuk; Bellini portresinden esinlenen renkler. Oyuncunun hemen yanında, surlara bakar.
+  const fatihActor = heroFigure(root, actors, { model: 'king', robe: '#8c1f1c', cap: '#ece6d6', hat: 'sultan', hair: '#2a1a12' }, 2.6, 9, 3.2, Math.PI, { cloak: 'fur', cloakColor: '#5a2a22', glowColor: '255,200,120', scale: 1.08 });
+  fatihActor.look(new THREE.Vector3(0, 10, -60)); fatihActor.lookTarget = null;
   // Dalgalar: her asker GPU'da hareket eder, Quest'te işlemciyi yormaz.
   const waves = [{ n: 2600, delay: 11, back: 31, colors: ['#6e4a30', '#4f3d2c', '#7a6a50', '#3a3a30'], speed: 3 }, { n: 2200, delay: 41, back: 57, colors: ['#8c2a22', '#6a6f78', '#a8382a'], speed: 3.2 }, { n: 1800, delay: 58, back: 9999, colors: ['#e0dac8', '#2f4a78', '#e8e0d0'], speed: 3.4 }];
   const wavesAll = waves.flatMap(w => Array.from({ length: w.n }, () => w)); for (let i = wavesAll.length - 1; i > 0; i--) { const j = R(i + 1) | 0; [wavesAll[i], wavesAll[j]] = [wavesAll[j], wavesAll[i]]; }
@@ -303,6 +306,15 @@ function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
 const flagMat = () => new THREE.MeshBasicMaterial({ map: T.turkFlag(), side: THREE.DoubleSide });
 function flagPole(g, x, y, z, h, w = 1.5) { const f = new THREE.Group(); f.position.set(x, y, z); const pole = new THREE.Mesh(new THREE.CylinderGeometry(.03, .04, h, 6), lam({ color: '#3a2a1a' })); pole.position.y = h / 2; const cl = new THREE.Mesh(new THREE.PlaneGeometry(w, w * .66, 8, 2), flagMat()); cl.position.set(w / 2 + .03, h - w * .4, 0); f.add(pole, cl); f.userData.cloth = cl; f.userData.dyn = true; g.add(f); return f; }
 function waveFlag(cl, t) { const p = cl.geometry.attributes.position; cl.userData.x0 ??= Array.from({ length: p.count }, (_, i) => p.getX(i)); for (let i = 0; i < p.count; i++) { const x = cl.userData.x0[i] + .75; p.setZ(i, Math.sin(x * 4 - t * 4) * .06 * x); } p.needsUpdate = true; }
+
+// Tarihî figürler: tanınır kıyafet, pelerin, ışık ve aura. Konuşmazlar; sahnenin merkezinde dururlar.
+function heroFigure(g, actors, opts, x, y, z, ry, { cloak, cloakColor, glowColor, light = true, anim = 'Idle_Neutral', scale = 1.04 } = {}) {
+  const a = makeActor({ anim, scale, ...opts }); a.root.position.set(x, y, z); a.root.rotation.y = ry; g.add(a.root); actors.push(a);
+  if (cloak) { const pts = [[.001, 1.36], [.26, 1.34], [.33, 1.0], [.4, .5], [.46, .04], [.001, .02]].map(([px, py]) => new THREE.Vector2(px, py)); const c = new THREE.Mesh(new THREE.LatheGeometry(pts, 18, Math.PI * .55, Math.PI * 1.9), new THREE.MeshLambertMaterial({ color: cloakColor, side: THREE.DoubleSide })); c.scale.setScalar(scale); c.castShadow = true; c.userData.dyn = true; a.root.add(c); a.cloak = c; if (cloak === 'bees') { const bee = new THREE.InstancedMesh(new THREE.SphereGeometry(.012, 5, 4), new THREE.MeshLambertMaterial({ color: '#f0c850', emissive: '#6a5010' }), 90), M = new THREE.Matrix4(); for (let i = 0; i < 90; i++) { const t = i / 90, ang = Math.PI * .55 + (i * 2.399) % (Math.PI * 1.9), yy = .1 + (i * .137) % 1.2, r = .205 + (1.36 - yy) / 1.36 * .12; M.setPosition(Math.sin(ang) * r, yy, Math.cos(ang) * r); bee.setMatrixAt(i, M); } bee.scale.setScalar(scale); bee.userData.dyn = true; a.root.add(bee); } if (cloak === 'fur') { const f = new THREE.Mesh(new THREE.TorusGeometry(.3, .07, 8, 20), new THREE.MeshLambertMaterial({ color: '#4a3a2a' })); f.rotation.x = Math.PI / 2; f.position.y = 1.36 * scale; f.scale.set(1, 1, .8); a.root.add(f); } }
+  const halo = glow(3.2, glowColor); halo.position.y = 1.1; halo.material.opacity = .26; a.root.add(halo); a.halo = halo;
+  if (light) { const l = new THREE.SpotLight(glowColor.includes('255,2') ? '#ffe2bb' : '#ffe8c8', 60, 12, .5, .7, 1.1); l.position.set(0, 6.5, 2); l.target.position.set(0, 1, 0); a.root.add(l, l.target); }
+  return a;
+}
 
 export function buildAnkara() {
   const g = new THREE.Group();
@@ -364,6 +376,8 @@ export function buildMeclis() {
   const actors = [], hero = placed(actors, g), hats = ['#8c1f1c', '#23202a', '#8c1f1c'];
   [[-1.5, -.6], [2.6, 1], [-3.6, 2.6], [4.5, -.6], [-4.8, -2.2], [3, 4.2]].forEach(([x, z], i) => hero({ robe: ['#2b2b33', '#3a3f4a', '#3b3430'][i % 3], cap: hats[i % 3], hat: 'fez', hair: ['#3a2a1e', '#6a6258'][i % 2] }, x, z, 3.14, i % 2 ? 'Interact' : 'Idle_Neutral'));
   hero({ robe: '#26262c', cap: '#8c1f1c', hat: 'fez' }, 1.4, -7.8, 0, 'Interact');
+  // Mustafa Kemal Paşa: koyu ceket, kalpak; kürsüde. Konuşma metni yoktur, yalnızca tarihî anlatımda geçer.
+  heroFigure(g, actors, { robe: '#2a2c34', hat: 'kalpak', hair: '#6a5a44' }, 0, .5, -5.2, 0, { glowColor: '255,225,170', scale: 1.06 });
   const rows = []; for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) if ((r + c) % 2 === 0) rows.push([(c < 2 ? -4.9 : 1.5) + (c % 2) * 2.3, 0, -2.2 + r * 1.6]); rows.forEach(([x, , z], i) => { const f = figure({ robe: ['#2b2b33', '#3a3f4a', '#3b3430', '#23232a'][i % 4], cap: i % 3 ? '#8c1f1c' : '#23202a', hat: 'bork' }); f.position.set(x, 0, z); f.rotation.y = Math.PI; g.add(f); });
   const lamps = [[-3.5, -3], [3.5, -3], [-3.5, 4], [3.5, 4]].map(([x, z]) => { const l = glow(1.1, '255,190,110'); l.material.opacity = .55; l.position.set(x, 5.2, z); g.add(l, box(.04, 1.3, .04, dark, x, 5.85, z)); return l; });
   motes(g, 40, [-6, 6], [.5, 5], [-8, 8], '#ffe2b0', .04);
@@ -458,7 +472,7 @@ export function buildNotre() {
   g.add(box(14, .6, 8, lam({ color: '#6a1f1c' }), 0, .3, -16), box(5, 2, 1.4, lam({ color: '#d8ccb0' }), 0, 1.6, -19.5), box(1.4, 3, 1.2, gold, -4.8, 2.1, -15.5), box(1.4, 3, 1.2, gold, 4.8, 2.1, -15.5));
   const candles = []; for (let x = -4; x <= 4; x += 2) { const s = glow(.8, '255,200,120'); s.position.set(x, 3.3, -19.5); g.add(s); candles.push(s); }
   const actors = [], hero = placed(actors, g);
-  hero({ model: 'king', robe: '#8c1f1c', hat: 'none', hair: '#3a2a1e' }, 0, -15.5, 0).root.position.y = .6; const jo = hero({ model: 'hood', robe: '#e6dcc8', hat: 'none' }, 1.4, -14.6, -.5); jo.root.position.y = .6; const pope = hero({ model: 'adv', robe: '#ece6d6', hat: 'none', hair: '#a8a29a' }, -4.8, -15.5, .6); pope.root.position.y = .6; hero({ robe: '#7a2a2a', hat: 'none' }, -2.6, -13.4, .6, 'Interact').root.position.y = .6;
+  heroFigure(g, actors, { model: 'king', robe: '#f2ead8', hat: 'laurel', hair: '#2a1e14' }, 0, .6, -15.5, 0, { cloak: 'bees', cloakColor: '#8c1f1c', glowColor: '255,215,140' }); const jo = hero({ model: 'hood', robe: '#e6dcc8', hat: 'none' }, 1.4, -14.6, -.5); jo.root.position.y = .6; const pope = hero({ model: 'adv', robe: '#ece6d6', hat: 'none', hair: '#a8a29a' }, -4.8, -15.5, .6); pope.root.position.y = .6; hero({ robe: '#7a2a2a', hat: 'none' }, -2.6, -13.4, .6, 'Interact').root.position.y = .6;
   hero({ model: 'hood', robe: '#2a3a6a', hat: 'none' }, -3, 3, 1.5, 'Interact'); const gr = [[hero({ robe: '#2d3f73', cap: '#16161c', hat: 'tricorne' }, 3.2, 5, -1.4, 'Idle_Sword').root, hero({ model: 'hood', robe: '#6a4a5a', hat: 'none' }, 4.2, 5.4, -1.8).root], [hero({ robe: '#3a2e4a', hat: 'none' }, -3.4, 9, 1.4, 'Interact').root, hero({ model: 'hood', robe: '#4a3a58', hat: 'none' }, -4.2, 9.4, 1).root]];
   const seat = []; for (let z = 8; z > -11; z -= 1.3) for (let x = -4.2; x <= 4.2; x += 1.05) { if (Math.abs(x) < 1.9) continue; seat.push([x, z]); } const crowd = army(seat.length, (i) => ({ x: seat[i][0], z: seat[i][1], color: ['#2a3a6a', '#6a1f1c', '#3a2e4a', '#d8ccb0', '#2a2a30', '#5a4a30'][i % 6], delay: 0, speed: 0, dist: 0, back: 9999 }), false, 'court', { tint: '#f0e4d4' }); g.add(crowd);
   motes(g, 70, [-7, 7], [.5, 12], [-20, 16], '#ffe2b0', .05); contactShadows(g, [[0, .61, -15.5, 1.1], [1.4, .61, -14.6, 1.1], [-4.8, .61, -15.5, 1.1]]); bakeStatic(g);

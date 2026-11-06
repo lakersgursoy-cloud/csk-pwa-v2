@@ -30,6 +30,8 @@ Zamanın Tanıkları'nın ilk oynanabilir WebXR prototipi. Meta Quest 3 tarayıc
 - Y/B tuşu veya ekranda M ile her an müzeye dönüş
 - Ankara 1923: telgraf memuru, Meclis kâtibi, öğretmen Ayşe; Cumhuriyet Gecesi izleme sahnesi
 
+Fatih Sultan Mehmed, Napolyon ve Mustafa Kemal Paşa sahnelerinde tanınır kıyafetleriyle görünür; konuşmazlar ve oyuncu onların yerine geçemez.
+
 Yusuf, Nikolas, Eleni, Pierre, Anna, Ayşe, Zehra ve Pedro kurgu kişilerdir. Tarihî olaylar ve sonuçlar değişmez.
 
 ## Henüz olmayanlar

@@ -44,6 +44,9 @@ function hatMesh(kind, cap) {
   if (kind === 'helm') { mesh(new THREE.SphereGeometry(.122, 11, 7, 0, 6.3, 0, 1.65), m, -.035); mesh(new THREE.ConeGeometry(.018, .07, 6), m, .11); }
   if (kind === 'tricorne') { const b = mesh(new THREE.CylinderGeometry(.16, .17, .03, 3), m, -.015); b.rotation.y = .5; mesh(new THREE.CylinderGeometry(.09, .105, .08, 10), m, .03); }
   if (kind === 'fez') { mesh(new THREE.CylinderGeometry(.075, .1, .13, 12), m, .03); mesh(new THREE.CylinderGeometry(.004, .004, .09, 4), d, .1); }
+  if (kind === 'kalpak') { mesh(new THREE.CylinderGeometry(.1, .105, .15, 12), new THREE.MeshLambertMaterial({ color: '#2a2422' }), .06); }
+  if (kind === 'sultan') { const t = mesh(new THREE.TorusGeometry(.105, .06, 8, 16), m, 0); t.rotation.x = Math.PI / 2; mesh(new THREE.SphereGeometry(.1, 10, 7), m, .04, 1, .75); mesh(new THREE.CylinderGeometry(.045, .06, .13, 10), new THREE.MeshLambertMaterial({ color: '#8c1f1c' }), .1); }
+  if (kind === 'laurel') { const r = mesh(new THREE.TorusGeometry(.115, .018, 6, 20), new THREE.MeshLambertMaterial({ color: '#d8b050', emissive: '#4a3a10' }), .02); r.rotation.x = Math.PI / 2; for (let i = 0; i < 14; i++) { const a = i / 14 * 6.28, l = new THREE.Mesh(new THREE.PlaneGeometry(.035, .06), new THREE.MeshLambertMaterial({ color: '#e0c060', side: THREE.DoubleSide })); l.position.set(Math.cos(a) * .12, .03 + (i % 2) * .02, Math.sin(a) * .12); l.rotation.set(.3, -a, 0); g.add(l); } }
   if (kind === 'scarf') { mesh(new THREE.SphereGeometry(.118, 10, 7, 0, 6.3, 0, 1.8), m, -.05, 1, 1.05); }
   return g;
 }
