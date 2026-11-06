@@ -268,3 +268,32 @@ export function facadeHiroshima(seed) {
   shoji(24, 300, 120, 150); shoji(360, 300, 120, 150); g.fillStyle = wood; g.fillRect(192, 290, 128, 222); g.fillStyle = '#6a5a44'; g.fillRect(200, 298, 54, 214); g.fillRect(258, 298, 54, 214);
   return tex(c);
 }
+
+export function facadeParis(seed) {
+  const [c, g] = canvas(512, 768); const base = ['#cdbfa6', '#bcae95', '#d8cbb2'][seed % 3]; g.fillStyle = base; g.fillRect(0, 0, 512, 768); speckle(g, 512, 768, 9000, .07);
+  g.fillStyle = 'rgba(60,50,40,.16)'; for (let y = 0; y < 768; y += 34) g.fillRect(0, y, 512, 2); for (let y = 0; y < 768; y += 68) for (let x = (y / 68 % 2) * 60; x < 512; x += 120) g.fillRect(x, y, 2, 34);
+  const grime = g.createLinearGradient(0, 560, 0, 768); grime.addColorStop(0, 'rgba(30,22,14,0)'); grime.addColorStop(1, 'rgba(30,22,14,.45)'); g.fillStyle = grime; g.fillRect(0, 560, 512, 208);
+  g.fillStyle = '#e6dcc6'; g.fillRect(0, 250, 512, 10); g.fillRect(0, 500, 512, 10);
+  const win = (x, y, w, h, arch) => { g.fillStyle = '#e6dcc6'; g.fillRect(x - 8, y - 8, w + 16, h + 16); if (arch) { g.beginPath(); g.arc(x + w / 2, y - 6, w / 2 + 8, Math.PI, 0); g.fill(); } g.fillStyle = '#20222a'; g.fillRect(x, y, w, h); if (arch) { g.beginPath(); g.arc(x + w / 2, y, w / 2, Math.PI, 0); g.fill(); } g.fillStyle = '#d8d0bc'; g.fillRect(x + w / 2 - 2, y - (arch ? w / 2 : 0), 4, h + (arch ? w / 2 : 0)); g.fillRect(x, y + h * .45, w, 3); g.fillStyle = ['#3d5a50', '#4e5a68', '#6a4a40'][seed % 3]; g.fillRect(x - 30, y - (arch ? w / 2 : 0), 24, h + (arch ? w / 2 : 0)); g.fillRect(x + w + 6, y - (arch ? w / 2 : 0), 24, h + (arch ? w / 2 : 0)); g.fillStyle = 'rgba(0,0,0,.35)'; for (let k = 0; k < 6; k++) { g.fillRect(x - 30, y + k * h / 6, 24, 2); g.fillRect(x + w + 6, y + k * h / 6, 24, 2); } g.fillStyle = '#2a2a2e'; g.fillRect(x - 10, y + h + 8, w + 20, 6); for (let k = 0; k < 8; k++) g.fillRect(x - 8 + k * (w + 16) / 8, y + h - 20, 2, 28); };
+  for (let r = 0; r < 2; r++) for (const x of [90, 310]) win(x, 50 + r * 250, 86, 150, r === 1);
+  for (const x of [90]) win(x, 560, 86, 150, false);
+  g.fillStyle = '#e6dcc6'; g.fillRect(290, 540, 130, 228); g.fillStyle = '#2a1c12'; g.fillRect(300, 550, 110, 218); g.fillStyle = '#3f2a18'; g.fillRect(306, 556, 48, 206); g.fillRect(356, 556, 48, 206); g.fillStyle = '#b89a50'; g.beginPath(); g.arc(352, 660, 4, 0, 7); g.fill(); g.beginPath(); g.arc(360, 660, 4, 0, 7); g.fill();
+  return tex(c);
+}
+export function facadeByzantine(seed) {
+  const [c, g] = canvas(512, 512); g.fillStyle = ['#a58c6c', '#94806a', '#b29a78'][seed % 3]; g.fillRect(0, 0, 512, 512); speckle(g, 512, 512, 7000, .09);
+  for (let y = 0; y < 512; y += 16) { g.fillStyle = y % 48 < 16 ? 'rgba(110,60,40,.55)' : 'rgba(0,0,0,.12)'; g.fillRect(0, y, 512, y % 48 < 16 ? 7 : 2); } for (let y = 0; y < 512; y += 48) for (let x = (y / 48 % 2) * 40; x < 512; x += 80) { g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(x, y + 16, 2, 32); }
+  const grime = g.createLinearGradient(0, 360, 0, 512); grime.addColorStop(0, 'rgba(30,22,14,0)'); grime.addColorStop(1, 'rgba(30,22,14,.5)'); g.fillStyle = grime; g.fillRect(0, 360, 512, 152);
+  const win = (x, y, w, h) => { g.fillStyle = '#6a4a30'; g.fillRect(x - 10, y - 10, w + 20, h + 10); g.fillStyle = '#1b1411'; g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.fill(); g.fillStyle = '#8a6a44'; g.fillRect(x + w / 2 - 2, y, 4, h); for (let k = 1; k < 5; k++) g.fillRect(x, y + k * h / 5, w, 2); };
+  for (const x of [60, 220, 380]) win(x, 40, 72, 120);
+  for (const x of [60, 380]) win(x, 290, 72, 130);
+  g.fillStyle = '#6a4a30'; g.fillRect(200, 270, 112, 242); g.fillStyle = '#2a1c12'; g.beginPath(); g.moveTo(208, 512); g.lineTo(208, 330); g.arc(256, 330, 48, Math.PI, 0); g.lineTo(304, 512); g.fill(); g.fillStyle = '#3a2618'; for (let y = 300; y < 512; y += 34) g.fillRect(208, y, 96, 4);
+  return tex(c);
+}
+
+export function skyscraper(twin = false) {
+  const [c, g] = canvas(128, 512); g.fillStyle = twin ? '#a9b4be' : '#7a848e'; g.fillRect(0, 0, 128, 512);
+  if (twin) { for (let x = 2; x < 128; x += 4) { g.fillStyle = 'rgba(40,46,54,.55)'; g.fillRect(x, 0, 1.4, 512); } for (let y = 6; y < 512; y += 6) { g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, y, 128, 1); } }
+  else { for (let y = 6; y < 512; y += 10) for (let x = 6; x < 128; x += 12) { g.fillStyle = rnd() > .25 ? 'rgba(30,36,48,.75)' : 'rgba(255,230,180,.6)'; g.fillRect(x, y, 7, 6); } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}

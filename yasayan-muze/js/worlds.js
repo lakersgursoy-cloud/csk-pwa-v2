@@ -213,11 +213,13 @@ function makeSmoke(g, n) {
   };
 }
 
-function houses(g, side, from, to, x, colors, roof) {
-  const r = lam({ color: roof });
+function houses(g, side, from, to, x, colors, roof, style = 'paris') {
+  const r = lam({ color: roof }), P = style === 'paris';
   for (let z = from, i = 0; z > to; z -= 6, i++) {
-    const h = 6.5 + (i * 37 % 4), m = colors[i % colors.length]; g.add(box(6, h, 5.6, m, side * x, h / 2, z), box(6.5, .25, 6.1, r, side * x, h, z));
-    const c = new THREE.Mesh(new THREE.ConeGeometry(4.6, 2, 4), r); c.position.set(side * x, h + 1, z); c.rotation.y = Math.PI / 4; c.scale.z = .9; g.add(c);
+    const floors = P ? 3 + (i * 37 % 3) : 2, h = floors * (P ? 3.1 : 3.2), m = colors[i % colors.length].clone(); m.map = m.map.clone(); m.map.repeat.set(1, P ? floors / 3 : 1); m.map.needsUpdate = true; if (m.normalMap) { m.normalMap = m.normalMap.clone(); m.normalMap.repeat.copy(m.map.repeat); m.normalMap.needsUpdate = true; }
+    g.add(box(6, h, 5.6, m, side * x, h / 2, z), box(6.6, .3, 6.2, r, side * x, h, z));
+    if (P) { const mans = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3.4, 2.4, 4), lam({ color: '#4a4e58' })); mans.rotation.y = Math.PI / 4; mans.scale.z = .9; mans.position.set(side * x, h + 1.2, z); g.add(mans, box(.6, 1.2, .6, lam({ color: '#8a7a68' }), side * x + 1.6, h + 1.8, z - 1.4)); for (const dz of [-1.6, 1.6]) g.add(box(.9, 1, .3, lam({ color: '#4a4e58' }), side * (x - 2.9), h + .9, z + dz)); }
+    else { const c = new THREE.Mesh(new THREE.ConeGeometry(4.6, 1.8, 4), r); c.position.set(side * x, h + .9, z); c.rotation.y = Math.PI / 4; c.scale.z = .9; g.add(c); const sx = -side; g.add(box(1.2, 2, 2.6, m, side * x + sx * 3.4, h - 1.3, z), box(1.6, .25, 3, lam({ color: '#4a3222' }), side * x + sx * 3.4, h - 2.4, z)); }
   }
 }
 
@@ -540,8 +542,11 @@ export function buildNYC() {
   const bench = lam({ map: T.wood(2, 1) }); for (const x of [-6, 6, 18, -18]) g.add(box(2.4, .45, .5, bench, x, .35, -1.8));
   prop(g, 'firetruck', -5.2, 0, 4.4, 1.9, Math.PI / 2); prop(g, 'taxi', 6.4, 0, 3.4, 1.6, -Math.PI / 2); g.add(box(2.4, 1.1, 1, lam({ color: '#4a5468' }), 2.4, .55, 4)); scatter(g, 'bush', [[-12, 0, 11, 1.4, 1], [-9, 0, 12, 1.2, 2], [9, 0, 12, 1.3, 3], [13, 0, 11, 1.4, 1]]);
   // Ufuk çizgisi: İkiz Kuleler yalnızca sabahta görünür; yıkım gösterilmez.
-  const city = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), lam({ color: '#6f7a86' }), 70), M = new THREE.Matrix4(), Q = new THREE.Quaternion(); for (let i = 0; i < 70; i++) { const h = 24 + ((i * 41) % 70), w = 9 + i % 7, x = -220 + i * 6.4; M.compose(new THREE.Vector3(x, h / 2, -330 - (i * 17 % 60)), Q, new THREE.Vector3(w, h, 10)); city.setMatrixAt(i, M); } city.userData.dyn = true; g.add(city);
-  const towers = new THREE.Group(); for (const x of [-14, 12]) towers.add(box(20, 178, 20, lam({ color: '#a9b4be' }), x, 89, -345)); towers.userData.dyn = true; g.add(towers);
+  const cityM = lam({ map: T.skyscraper() }), cityG = new THREE.BoxGeometry(1, 1, 1), city = new THREE.InstancedMesh(cityG, cityM, 140), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), col = new THREE.Color();
+  for (let i = 0; i < 140; i++) { const row = i % 2, h = (row ? 18 : 30) + ((i * 41) % (row ? 50 : 90)), w = 8 + (i * 7) % 9, x = -260 + (i >> 1) * 7.6 + (row ? 3 : 0); M.compose(new THREE.Vector3(x, h / 2, -320 - row * 50 - (i * 17 % 30)), Q, new THREE.Vector3(w, h, 9)); city.setMatrixAt(i, M); city.setColorAt(i, col.set(['#6f7a86', '#8a8f94', '#5e6a78', '#9aa0a4', '#7a7066'][i % 5])); }
+  city.userData.dyn = true; g.add(city);
+  for (const [x, z, h] of [[-120, -300, 62], [60, -310, 70]]) { const ch = new THREE.Mesh(new THREE.CylinderGeometry(3, 5, h, 8), lam({ color: '#8a8f94' })); ch.position.set(x, h / 2, z); g.add(ch); }
+  const towerM = lam({ map: T.skyscraper(true) }), towers = new THREE.Group(); for (const x of [-14, 12]) { const t = box(20, 178, 20, towerM, x, 89, -345); towers.add(t, box(21, 2, 21, lam({ color: '#6a7078' }), x, 1, -345)); } towers.add(box(.6, 40, .6, lam({ color: '#5a6068' }), -14, 198, -345)); towers.userData.dyn = true; g.add(towers);
   const actors = [], hero = placed(actors, g); const groups = [[hero({ robe: '#3a3f4a', hat: 'none' }, 7, .6, -2, 'Interact').root, hero({ model: 'hood', robe: '#6a5a4a', hat: 'none' }, 8.2, 1, -2.2).root], [hero({ model: 'hood', robe: '#54607a', hat: 'none' }, -7, .4, 1.4, 'Interact').root, hero({ robe: '#4a4a50', hat: 'none' }, -8.2, .8, 1).root]];
   hero({ robe: '#6a5a4a', hat: 'none' }, 0, 0, 0).patrol([[-10, 6], [10, 7]], 1.1); hero({ model: 'hood', robe: '#3a3f4a', hat: 'none' }, 0, 0, 0).patrol([[12, 2], [-12, 1]], 1);
   bakeStatic(g);
@@ -558,8 +563,8 @@ export function buildCity() {
   const g = new THREE.Group();
   g.add(new THREE.Mesh(new THREE.SphereGeometry(200, 20, 12), new THREE.MeshBasicMaterial({ map: T.duskSky(), side: THREE.BackSide, fog: false })));
   const f = new THREE.Mesh(new THREE.PlaneGeometry(40, 120), lam(T.pbr(T.cobbles(18, 54), 3))); f.rotation.x = -Math.PI / 2; f.position.z = -30; g.add(f);
-  const walls = [0, 1, 2].map(i => lam(T.pbr(T.facade('istanbul', i), 1.2)));
-  houses(g, -1, 10, -20, 7.5, walls, '#6e3a2a'); houses(g, 1, 10, -20, 7.5, walls, '#5c3226');
+  const walls = [0, 1, 2].map(i => lam(T.pbr(T.facadeByzantine(i), 1.2)));
+  houses(g, -1, 10, -20, 7.5, walls, '#6e3a2a', 'byz'); houses(g, 1, 10, -20, 7.5, walls, '#5c3226', 'byz');
   g.add(box(8, 5, .4, walls[0], 0, 2.5, 13));
   // Ayasofya'nın uzak silueti: sokağın sonunda görünür
   const dome = lam({ color: '#8d6f62' }), d = new THREE.Mesh(new THREE.SphereGeometry(13, 18, 10, 0, 6.3, 0, 1.6), dome); d.position.set(0, 23, -74); d.scale.y = .62;
@@ -591,7 +596,7 @@ export function buildParis() {
   const g = new THREE.Group();
   g.add(new THREE.Mesh(new THREE.SphereGeometry(220, 20, 12), new THREE.MeshBasicMaterial({ map: getSky('day'), side: THREE.BackSide, fog: false })));
   const f = new THREE.Mesh(new THREE.PlaneGeometry(90, 130), lam(T.pbr(T.cobbles(40, 58), 3))); f.rotation.x = -Math.PI / 2; f.position.z = -20; g.add(f);
-  const walls = [0, 1, 2].map(i => lam(T.pbr(T.facade('paris', i), 1.2)));
+  const walls = [0, 1, 2].map(i => lam(T.pbr(T.facadeParis(i), 1.2)));
   houses(g, -1, 13, -30, 18, walls, '#3f4449'); houses(g, 1, 13, -30, 18, walls, '#3f4449');
   g.add(box(30, 7, .5, walls[1], 0, 3.5, 15));
   // Bastille: sekiz kule ve hendek. Çağdaş ölçümlere göre çevre binalarla yakın yükseklikteydi.
