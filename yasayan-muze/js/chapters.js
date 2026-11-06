@@ -1,6 +1,7 @@
 // Bölüm içeriği. Yusuf, Eleni, Anna, Ayşe, Zehra, Pedro, Nikolas gibi kişiler ve tüm oynanabilir karakterler kurgudur; tarihî olay ve sonuçlar değişmez.
 export const CHAPTERS = {
   istanbul: {
+    scale: [0, 1, 4, 5, 7, 8, 11],
     year: '1453', place: 'İstanbul', world: 'siege', hintAt: 'Mayıs 1453',
     arrive: { at: [0, -19.5], face: [0, -45], text: 'Mayıs 1453. Surların önündesin. Kimse seni göremiyor.' },
     traces: [[-3, -22.5], [0, -23], [3, -22.5]],
@@ -80,6 +81,7 @@ export const CHAPTERS = {
     },
   },
   guanahani: {
+    scale: [0, 2, 5, 7, 9],
     year: '1492', place: 'Guanahani', world: 'island', ambient: 'sea', hintAt: '12 Ekim 1492',
     arrive: { at: [0, 6], face: [0, -70], text: '12 Ekim 1492, sabah. Bahamalar’da küçük bir ada: Guanahani. Burada Lukayolar yaşıyor. Kimse seni göremiyor.' },
     traces: [[-3, 1.5], [0, 1], [3, 1.5]],
@@ -146,6 +148,7 @@ export const CHAPTERS = {
     },
   },
   napolyon: {
+    scale: [0, 2, 4, 5, 7, 9, 11],
     year: '1804', place: 'Notre-Dame', world: 'notre', ambient: 'museum', hintAt: '2 Aralık 1804',
     arrive: { at: [0, 13], face: [0, -30], text: '2 Aralık 1804. Gece kar yağdı. Notre-Dame’da marangozlar son çivileri çakıyor. Kimse seni göremiyor.' },
     traces: [[-1.9, 8], [0, 7.4], [1.9, 8]],
@@ -211,6 +214,7 @@ export const CHAPTERS = {
     },
   },
   hiroshima: {
+    scale: [0, 2, 3, 7, 8],
     year: '1945', place: 'Hiroşima', world: 'hiroshima', ambient: 'museum', solemn: true, hintAt: '6 Ağustos 1945',
     notice: 'Bu bölüm gerçek bir yıkımı ve kaybı anlatır. Saldırı anı gösterilmez. Y veya B tuşuyla istediğin an müzeye dönebilirsin.',
     arrive: { at: [0, 6], face: [0, -40], text: '6 Ağustos 1945, pazartesi sabahı. Gökyüzü açık. Hiroşima işe gidiyor. Kimse seni göremiyor.' },
@@ -218,7 +222,7 @@ export const CHAPTERS = {
     lines: [['Yangın yolu için bugün de evleri söküyoruz.', 'Öğrenci'], ['Sabah alarmı bitti, tramvay gene doldu.', 'Kadın']],
     trophy: { name: 'Kağıt turna', item: 'paper', title: 'Anı · 6 Ağustos 1945' },
     spectacle: {
-      label: 'Hatırlama', title: 'Hiroşima', at: [0, 4], face: [0, -30], y: 0, bounds: { x: [-3, 3], z: [2, 7] }, sleeve: null, traceAt: [6.5, 3], traceRy: -1.3,
+      label: 'Hatırlama', title: 'Hiroşima', at: [-13, -22.8], face: [14, -44], y: 0, bounds: { x: [-16, -10], z: [-24, -20] }, sleeve: null, traceAt: [6.5, 3], traceRy: -1.3,
       actor: { model: 'hood', robe: '#55607a', hat: 'none' }, end: 'Bu sahne bir anmaydı. Devam etmeden önce biraz durabilirsin.',
       beats: [
         { t: 0, text: '6 Ağustos 1945, saat 08.15. Bomba bırakıldı ve kırk üç saniye sonra şehrin üstünde patladı.' },
@@ -276,6 +280,7 @@ export const CHAPTERS = {
     },
   },
   berlin: {
+    scale: [0, 2, 3, 5, 7, 10],
     year: '1989', place: 'Berlin', world: 'berlin', ambient: 'crowd', hintAt: '9 Kasım 1989',
     arrive: { at: [0, 8], face: [0, -30], text: '9 Kasım 1989, gece. Bornholmer Sokağı sınır kapısı. Duvar yirmi sekiz yıldır burada. Kimse seni göremiyor.' },
     traces: [[-3, 3.5], [0, 3], [3, 3.5]],
@@ -340,6 +345,7 @@ export const CHAPTERS = {
     },
   },
   nyc: {
+    scale: [0, 2, 5, 7, 10],
     year: '2001', place: 'New York', world: 'nyc', ambient: 'museum', solemn: true, hintAt: '11 Eylül 2001',
     notice: 'Bu bölüm gerçek bir saldırıyı ve kaybı anlatır. Saldırı anı ve yıkım gösterilmez. Y veya B tuşuyla istediğin an müzeye dönebilirsin.',
     arrive: { at: [0, 5], face: [0, -60], text: '11 Eylül 2001, salı sabahı. Brooklyn. Gökyüzü alışılmadık kadar açık. Kimse seni göremiyor.' },
@@ -406,6 +412,7 @@ export const CHAPTERS = {
     },
   },
   paris: {
+    scale: [0, 2, 3, 5, 7, 8, 10],
     year: '1789', place: 'Paris', world: 'paris', hintAt: '14 Temmuz 1789',
     arrive: { at: [0, 3], face: [0, -40], text: '14 Temmuz 1789, ikindi vakti. Bastille önündesin. Kimse seni göremiyor.' },
     traces: [[-4, -2], [0, -3], [4, -2]],
@@ -471,6 +478,7 @@ export const CHAPTERS = {
     },
   },
   ankara: {
+    scale: [0, 2, 4, 7, 9],
     year: '1923', place: 'Ankara', world: 'ankara', hintAt: '29 Ekim 1923',
     arrive: { at: [0, 4], face: [0, -26], text: '29 Ekim 1923, akşam. Ankara birkaç haftadır başkent. Meclis’in ışıkları yanıyor. Kimse seni göremiyor.' },
     traces: [[-3, -1.5], [0, -2], [3, -1.5]],

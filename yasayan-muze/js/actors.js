@@ -5,20 +5,23 @@ import { MeshoptDecoder } from '../vendor/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from '../vendor/SkeletonUtils.js';
 
 const HEIGHT = { adv: 1.72, king: 1.76, hood: 1.64 }, FILE = { adv: 'adventurer', king: 'monarch', hood: 'hooded_adventurer' };
-const PROPS = ['barrel', 'barrels', 'campfire', 'log', 'rock_large', 'rock_tall', 'stump', 'tree_pine_tall', 'tree_oak', 'crate'];
+const PROPS = ['barrel', 'barrels', 'campfire', 'log', 'rock_large', 'rock_tall', 'stump', 'tree_pine_tall', 'tree_oak', 'crate', 'taxi', 'firetruck', 'bush'];
 const kit = { models: {}, props: {} };
 const shade = (c, k) => new THREE.Color(c).multiplyScalar(k);
 
-export async function loadKit() {
-  const l = new GLTFLoader(); l.setMeshoptDecoder(MeshoptDecoder);
+export const getSky = (n) => kit.skies[n];
+export async function loadKit(onStep = () => {}) {
+  const l = new GLTFLoader(), tl = new THREE.TextureLoader(); l.setMeshoptDecoder(MeshoptDecoder); kit.skies = {};
+  const step = (p) => p.then(v => { onStep(); return v; });
   await Promise.all([
-    ...Object.entries(FILE).map(async ([k, f]) => {
+    ...['day', 'grey'].map(n => step(tl.loadAsync(`./assets/sky/${n}.jpg`).then(t => { t.colorSpace = THREE.SRGBColorSpace; kit.skies[n] = t; }))),
+    ...Object.entries(FILE).map(([k, f]) => step((async () => {
       const g = await l.loadAsync(`./assets/${f}.glb`), clips = {}; for (const a of g.animations) clips[a.name.split('|').pop()] = a;
       g.scene.getObjectByName('Sword')?.removeFromParent(); g.scene.getObjectByName('Backpack')?.removeFromParent();
       g.scene.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(g.scene), s = HEIGHT[k] / (box.max.y - box.min.y), head = g.scene.getObjectByName('Head').getWorldPosition(new THREE.Vector3());
       kit.models[k] = { scene: g.scene, clips, scale: s, headTop: { adv: .2, king: .2, hood: .19 }[k] };
-    }),
-    ...PROPS.map(async p => { kit.props[p] = (await l.loadAsync(`./assets/${p}.glb`)).scene; }),
+    })())),
+    ...PROPS.map(p => step(l.loadAsync(`./assets/${p}.glb`).then(g => { kit.props[p] = g.scene; }))),
   ]);
   return kit;
 }
@@ -73,4 +76,26 @@ export function makeActor({ model = 'adv', robe = '#6c5236', cap = '#c9bb9e', ha
     mixer?.update(dt);
   };
   return a;
+}
+
+// Kalabalık atlası: iskeletli karakterlerin yürüme kareleri dokuya çizilir. Her kişi iki üçgendir.
+export const ATLAS = { cols: 8, rows: 4 };
+let bakeRenderer = null; export const setBakeRenderer = (r) => { bakeRenderer = r; };
+export function bakeCrowd(looks, { spear = false, yaw = Math.PI } = {}) {
+  const r = bakeRenderer, size = 1024, rt = new THREE.WebGLRenderTarget(size, size, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, samples: 0 }), scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight('#ffffff', '#6a6a70', 2.4)); const dl = new THREE.DirectionalLight('#ffffff', 2.2); dl.position.set(1.5, 3, yaw === 0 ? 3 : -3); scene.add(dl);
+  const cam = new THREE.OrthographicCamera(-.5, .5, 2.05, -.05, -5, 5); cam.position.set(0, 0, 0); cam.lookAt(0, 0, -1);
+  const vp = r.getViewport(new THREE.Vector4()), sp = r.getScissor(new THREE.Vector4()), xr = r.xr.enabled, prevT = r.getRenderTarget(), pc = new THREE.Color(); r.getClearColor(pc); const pa = r.getClearAlpha(), tm = r.toneMapping, sm = r.shadowMap.autoUpdate, sc = r.getScissorTest();
+  r.xr.enabled = false; r.toneMapping = THREE.NoToneMapping; r.setRenderTarget(rt); r.setClearColor(0, 0); r.clear(); r.setScissorTest(true);
+  const cw = size / ATLAS.cols, ch = size / ATLAS.rows;
+  looks.slice(0, ATLAS.rows).forEach((lk, row) => {
+    const a = makeActor({ anim: 'Walk', ...lk }); a.root.rotation.y = yaw; scene.add(a.root); if (spear) { const s = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 2.2, 4), new THREE.MeshLambertMaterial({ color: '#4a3a2a' })); s.position.set(.26, 1.1, 0); a.root.add(s); }
+    const base = kit.models[lk.model || 'adv'], walk = a.mixer.clipAction(base.clips.Walk), idle = a.mixer.clipAction(base.clips.Idle_Neutral);
+    for (let c = 0; c < ATLAS.cols; c++) {
+      a.mixer.stopAllAction(); const act = c < 6 ? walk : idle, dur = act.getClip().duration; act.reset().play(); act.time = c < 6 ? c / 6 * dur : (c - 6) * .9; a.mixer.update(0);
+      const x = c * cw, y = row * ch; r.setViewport(x, y, cw, ch); r.setScissor(x, y, cw, ch); r.render(scene, cam);
+    }
+    scene.remove(a.root);
+  });
+  r.setViewport(vp); r.setScissor(sp); r.setScissorTest(sc); r.setRenderTarget(prevT); r.setClearColor(pc, pa); r.toneMapping = tm; r.xr.enabled = xr; rt.texture.anisotropy = 2; return rt.texture;
 }

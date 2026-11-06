@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as T from './textures.js';
 import { Panel } from './ui.js';
 import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
-import { makeActor, scatter, prop } from './actors.js';
+import { makeActor, scatter, prop, bakeCrowd, getSky, ATLAS } from './actors.js';
 
 // Sabit güneş gölgesi: sahneye girişte bir kez çizilir, her karede maliyet getirmez.
 function sunShadow(l, size, map = 2048) { l.castShadow = true; l.shadow.mapSize.set(map, map); const c = l.shadow.camera; c.left = c.bottom = -size; c.right = c.top = size; c.near = 1; c.far = 260; l.shadow.bias = -.0006; l.shadow.normalBias = .05; return l; }
@@ -177,7 +177,7 @@ export function buildSiege() {
   const nikolas = makeActor({ model: 'adv', robe: '#4a4f60', hat: 'none', anim: 'Idle_Neutral' }); nikolas.root.position.set(16, 13, -53); nikolas.root.rotation.y = .4; g.add(nikolas.root); actors.push(nikolas);
   // Duvardan görülen ordugâh ateşleri ve toz
   const far = new Float32Array(900); for (let i = 0; i < 300; i++) far.set([-140 + Math.random() * 280, .8, 16 + Math.random() * 110], i * 3);
-  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(far, 3)); const campfires = new THREE.Points(fg, new THREE.PointsMaterial({ color: '#ff9440', size: 1.1, map: T.soft('255,255,255'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); campfires.userData.dyn = true; g.add(campfires);
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(far, 3)); const campfires = new THREE.Points(fg, new THREE.PointsMaterial({ color: '#ff9440', size: .45, map: T.soft('255,255,255'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); campfires.userData.dyn = true; g.add(campfires);
   motes(g, 120, [-24, 24], [.4, 7], [-26, 14], '#ffc890', .08);
   contactShadows(g, [...people.map(p => [p.position.x, 0, p.position.z, 1.1]), ...groups.flat().map(p => [p.position.x, 0, p.position.z, 1.1]), [2.4, 0, -6.8, 1.1], [-1.2, 0, -7, 1.1], [4, 0, -11.5, 6], ...tents.map(([x, z]) => [x, 0, z, 7]), ...[[8.5, -8], [9.8, -7.2], [9, -6.2], [8.7, -7.1]].map(([x, z]) => [x, 0, z, 2])]);
   bakeStatic(g);
@@ -212,26 +212,38 @@ function houses(g, side, from, to, x, colors, roof) {
 
 // Fatih'in Gözünden: tepe, otağ, binlerce asker ve son saldırı.
 // Kalabalık figürü: uzaktan insan silüeti, baş ten rengindedir. Geometri hafif tutulur.
-function crowdFigure(spear) {
-  const b = new THREE.CylinderGeometry(.13, .27, 1.2, 6, 1, true); b.translate(0, .6, 0); const h = new THREE.OctahedronGeometry(.125, spear ? 0 : 1); h.scale(.9, 1.1, .95); h.translate(0, 1.4, 0);
-  const parts = [b.toNonIndexed(), h]; if (spear) { const sp = new THREE.PlaneGeometry(.05, 2.3); sp.translate(.22, 1.1, 0); parts.push(sp.toNonIndexed()); }
-  const flags = parts.map((p, i) => { const pos = p.attributes.position, f = new Float32Array(pos.count); if (i === 1) for (let k = 0; k < pos.count; k++) f[k] = pos.getY(k) < 1.43 ? 1 : 0; return f; }); parts.forEach((p, i) => { p.deleteAttribute('uv'); p.setAttribute('aHead', new THREE.BufferAttribute(flags[i], 1)); }); return mergeGeometries(parts);
-}
-const SOLDIER = crowdFigure(true);
-const CIVILIAN = crowdFigure(false);
-function army(n, make, enter = false, base = SOLDIER) {
-  const geo = base.clone(), w = new Float32Array(n * 4), ax = new Float32Array(n), m = new THREE.InstancedMesh(geo, lam({ color: '#fff', side: THREE.DoubleSide }), n), M = new THREE.Matrix4(), c = new THREE.Color();
-  const uni = { uT: { value: 0 } };
-  for (let i = 0; i < n; i++) { const o = make(i); M.setPosition(o.x, o.y ?? 0, o.z); m.setMatrixAt(i, M); m.setColorAt(i, c.set(o.color)); w.set([o.delay, o.speed, o.dist, o.back], i * 4); ax[i] = o.ax || 0; }
-  geo.setAttribute('aW', new THREE.InstancedBufferAttribute(w, 4)); geo.setAttribute('aX', new THREE.InstancedBufferAttribute(ax, 1));
-  m.material.onBeforeCompile = (s) => {
-    s.uniforms.uT = uni.uT;
-    s.fragmentShader = s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += vColor * .2;');
-    s.vertexShader = 'attribute vec4 aW; attribute float aX; attribute float aHead; uniform float uT;\n' + s.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n vColor = mix(vColor, vec3(.3, .2, .14), aHead);').replace('#include <begin_vertex>', `#include <begin_vertex>
+// Kalabalık: atlastaki gerçek karakter kareleri; konum, yürüme ve kare seçimi GPU'da.
+const LOOKS = {
+  camp: [{ robe: '#7a5a3a', cap: '#c9bb9e', hat: 'bork' }, { robe: '#8c2a22', cap: '#e8e0ce', hat: 'turban' }, { robe: '#d8d0bc', cap: '#ece6d6', hat: 'bork' }, { robe: '#5a5a60', cap: '#8d8d92', hat: 'helm' }],
+  paris: [{ robe: '#3a3f4a', hat: 'none' }, { model: 'hood', robe: '#7a4a3a', hat: 'none' }, { robe: '#6e2a21', cap: '#16161c', hat: 'tricorne' }, { model: 'hood', robe: '#c8bda6', hat: 'none' }],
+  ankara: [{ robe: '#3e4450', cap: '#8c1f1c', hat: 'fez' }, { model: 'hood', robe: '#6a7a9a', hat: 'none' }, { robe: '#6a4a30', cap: '#8c1f1c', hat: 'fez' }, { model: 'hood', robe: '#8c5a44', hat: 'none' }],
+  isle: [{ robe: '#a87a4e', hair: '#141210', hat: 'none' }, { model: 'hood', robe: '#b08858', hat: 'none' }, { robe: '#c9b48a', hair: '#141210', hat: 'none' }, { model: 'hood', robe: '#a07a4e', hat: 'none' }],
+  court: [{ robe: '#2a3a6a', hat: 'none' }, { model: 'hood', robe: '#6a1f1c', hat: 'none' }, { robe: '#3a2e4a', hat: 'none' }, { model: 'hood', robe: '#d8ccb0', hat: 'none' }],
+  berlin: [{ robe: '#3a3f4a', hat: 'none' }, { model: 'hood', robe: '#54607a', hat: 'none' }, { robe: '#6a5a4a', hat: 'none' }, { model: 'hood', robe: '#8a7a64', hat: 'none' }],
+};
+function crowdMaterial(tex, enter, uT) {
+  return new THREE.ShaderMaterial({ fog: true, transparent: false, side: THREE.DoubleSide, alphaToCoverage: true,
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uTint: { value: new THREE.Color('#ffffff') }, uMap: { value: null } }]),
+    vertexShader: `attribute vec4 aW; attribute float aX; attribute vec2 aC; uniform float uT; varying vec2 vUv; varying float vH; #include <fog_pars_vertex>
+    void main() {
       float p = max(0., uT - aW.x), d = min(p * aW.y, aW.z), r = max(0., uT - aW.w) * aW.y * 1.3; d = max(0., d - r);
-      transformed.z -= d; if (aW.y > 0. && p > 0.) transformed.y += abs(sin(uT * 6. + aW.x * 9.)) * .12; transformed.x -= aX * smoothstep(.45, .95, d / max(aW.z, .01))${enter ? '; if (aW.y > 0. && d >= aW.z - .02) transformed.y -= 40.' : ''};`);
-  };
-  m.material.customProgramCacheKey = () => `muze-army-${enter}`; m.frustumCulled = false; m.userData.dyn = true; m.userData.uni = uni; return m;
+      float moving = (aW.y > 0. && p > 0. && (d < aW.z - .01 || uT > aW.w) && d > .01) ? 1. : 0.;
+      vec3 b = instanceMatrix[3].xyz; b.z -= d; b.x -= aX * smoothstep(.45, .95, d / max(aW.z, .01)); float hide = (${enter ? 1 : 0} > 0 && aW.y > 0. && d >= aW.z - .02) ? 1. : 0.;
+      vec3 side = normalize(cross(vec3(0., 1., 0.), vec3(cameraPosition.x - b.x, 0., cameraPosition.z - b.z)));
+      vec3 w = b + side * position.x + vec3(0., position.y - hide * 60., 0.);
+      float frame = moving > .5 ? floor(mod(uT * 7. + aC.y * 6., 6.)) : 6. + floor(mod(uT * .5 + aC.y * 2., 2.));
+      vUv = vec2((frame + uv.x) / ${ATLAS.cols}., (aC.x + uv.y) / ${ATLAS.rows}.); vH = uv.y; vec4 mvPosition = viewMatrix * vec4(w, 1.); gl_Position = projectionMatrix * mvPosition; #include <fog_vertex>
+    }`.replace(/#include/g, '\n#include').replace(/ void main/, '\nvoid main'),
+    fragmentShader: `uniform sampler2D uMap; uniform vec3 uTint; varying vec2 vUv; varying float vH; #include <fog_pars_fragment>
+    void main() { vec4 c = texture2D(uMap, vUv); if (c.a < .35) discard; gl_FragColor = vec4(c.rgb * uTint * (.72 + vH * .4), c.a);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n#include <fog_fragment>\n}`.replace('#include <fog_pars_fragment>', '\n#include <fog_pars_fragment>\n') });
+}
+const QUAD = (() => { const q = new THREE.PlaneGeometry(1, 2.1); q.translate(0, 1, 0); return q; })();
+function army(n, make, enter = false, look = 'paris', opts = {}) {
+  const geo = QUAD.clone(), w = new Float32Array(n * 4), ax = new Float32Array(n), ac = new Float32Array(n * 2), mat = crowdMaterial(null, enter); mat.uniforms.uMap.value = bakeCrowd(LOOKS[look], opts); mat.uniforms.uTint.value.set(opts.tint || '#ffffff');
+  const m = new THREE.InstancedMesh(geo, mat, n), M = new THREE.Matrix4(), rows = {};
+  for (let i = 0; i < n; i++) { const o = make(i); M.setPosition(o.x, o.y ?? 0, o.z); m.setMatrixAt(i, M); w.set([o.delay, o.speed, o.dist, o.back], i * 4); ax[i] = o.ax || 0; rows[o.color] ??= Object.keys(rows).length; ac.set([rows[o.color] % ATLAS.rows, Math.random()], i * 2); }
+  geo.setAttribute('aW', new THREE.InstancedBufferAttribute(w, 4)); geo.setAttribute('aX', new THREE.InstancedBufferAttribute(ax, 1)); geo.setAttribute('aC', new THREE.InstancedBufferAttribute(ac, 2));
+  m.frustumCulled = false; m.userData.dyn = true; m.userData.uni = { uT: mat.uniforms.uT, uTint: mat.uniforms.uTint }; return m;
 }
 function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
   const root = new THREE.Group(); root.visible = false; g.add(root); const R = (a) => Math.random() * a;
@@ -246,7 +258,7 @@ function buildSpectacle(g, { sky, hemi, sun, posts, smoke, actors }) {
   const fullCount = wavesAll.length + 900, men = army(fullCount, (i0) => {
     const i = (i0 + 900) % fullCount; if (i >= wavesAll.length) { const b = i % 3; return b === 0 ? { x: -100 + R(200), y: 9, z: -39.9 - R(.8), color: '#4e4b53', delay: 0, speed: 0, dist: 0, back: 9999 } : { x: -100 + R(200), y: 13, z: -49.9 - R(1), color: '#4e4b53', delay: 0, speed: 0, dist: 0, back: 9999 }; }
     const w = wavesAll[i], u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.5) * 90, rank = R(1), z0 = 3 - rank * 28; return { x, z: z0, color: w.colors[i % w.colors.length], delay: w.delay + rank * 7, speed: w.speed + R(.5), dist: Math.max(1, z0 + 30 + R(2.5)), back: w.back + R(4) };
-  }); root.add(men);
+  }, false, 'camp', { spear: true }); root.add(men);
   const lad = new THREE.InstancedMesh(new THREE.BoxGeometry(.5, 10, .08), lam({ map: T.wood(1, 6) }), 60), M = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromEuler(new THREE.Euler(.2, 0, 0));
   for (let i = 0; i < 60; i++) { M.compose(new THREE.Vector3(-90 + i * 3.1 + R(1.5), 4.6, -38.8), Q, new THREE.Vector3(1, 1, 1)); lad.setMatrixAt(i, M); } lad.userData.dyn = true; lad.visible = false; root.add(lad);
   const guns = [-46, -28, -12, 4, 22, 40].map(x => { const s = glow(9, '255,200,120'); s.position.set(x, 1.3, -16); s.visible = false; root.add(s); return s; });
@@ -309,7 +321,7 @@ export function buildAnkara() {
   const warm = new THREE.PointLight('#ffcf8a', 60, 34, 1.5); warm.position.set(0, 5, -16); g.add(warm);
   // Cumhuriyet Gecesi: sahne, meşaleli kalabalık, yanan pencereler
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); const R = (a) => Math.random() * a, ww = lam({ map: T.wood(2, 1) }); stage.add(box(7, .22, 4, ww, 0, 4.7, 3)); for (const [x, z] of [[-3.4, 1.2], [3.4, 1.2], [-3.4, 4.8], [3.4, 4.8]]) stage.add(box(.2, 4.7, .2, ww, x, 2.35, z));
-  const N = 2400, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.2) * 13, z = 12 - R(1) * 9; return { x, z, ax: x * .25, color: ['#d8b070', '#8c3a2c', '#cfc5ae', '#6a7a9a', '#b98a50'][R(5) | 0], delay: 55 + R(14), speed: 1.8 + R(.9), dist: z + 3 + R(1) * R(1) * 20, back: 9999 }; }, false, CIVILIAN); mob.visible = false; stage.add(mob);
+  const N = 2400, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.2) * 13, z = 12 - R(1) * 9; return { x, z, ax: x * .25, color: ['#d8b070', '#8c3a2c', '#cfc5ae', '#6a7a9a', '#b98a50'][R(5) | 0], delay: 55 + R(14), speed: 1.8 + R(.9), dist: z + 3 + R(1) * R(1) * 20, back: 9999 }; }, false, 'ankara', { tint: '#c8c0d0' }); mob.visible = false; stage.add(mob);
   const torches = new Float32Array(600); for (let i = 0; i < 200; i++) torches.set([-13 + R(26), 2 + R(.3), -20 + R(10)], i * 3); const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(torches, 3)); const tp = new THREE.Points(tg, new THREE.PointsMaterial({ color: '#ffb060', size: .4, map: T.soft('255,255,255'), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); stage.add(tp);
   const spect = { active: false, t: 0, sound: null, setDensity: (k) => { mob.count = Math.floor(N * k); }, raiseFlag() {} };
   let lit = 0;
@@ -366,7 +378,7 @@ let _bark, _leaf; const palmBark = () => (_bark ??= lam({ color: '#6a5238' })), 
 function seaPlane(g, color, y = .02) { const n = T.waves(), sea = new THREE.Mesh(new THREE.PlaneGeometry(700, 500), new THREE.MeshPhongMaterial({ color, normalMap: n, shininess: 90, specular: '#a0c0c8' })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, y, -240); sea.userData.dyn = true; g.add(sea); return { sea, n }; }
 
 export function buildIsland() {
-  const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.SphereGeometry(330, 20, 12), new THREE.MeshBasicMaterial({ map: T.islandSky(), side: THREE.BackSide, fog: false })));
+  const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.SphereGeometry(330, 20, 12), new THREE.MeshBasicMaterial({ map: getSky('day'), side: THREE.BackSide, fog: false })));
   const { n } = seaPlane(g, '#2a8a96', -.25);
   const groundGeo = new THREE.PlaneGeometry(220, 90, 44, 24), gp = groundGeo.attributes.position; for (let i = 0; i < gp.count; i++) { const wz = -gp.getY(i) + 28, sl = THREE.MathUtils.smoothstep(wz, -14, -8); gp.setZ(i, -.7 + sl * .75 + THREE.MathUtils.smoothstep(wz, 16, 34) * 3.5); } groundGeo.computeVertexNormals();
   const sand = new THREE.Mesh(groundGeo, lam(T.pbr(T.sand(40, 16), 1.4))); sand.rotation.x = -Math.PI / 2; sand.position.z = 28; g.add(sand);
@@ -391,7 +403,7 @@ export function buildIsland() {
   g.add(new THREE.HemisphereLight('#cfe3ec', '#a89770', 1.6)); const sun = sunShadow(new THREE.DirectionalLight('#fff0cc', 2.6), 40); sun.position.set(-30, 46, 24); sun.target.position.set(0, 0, 0); g.add(sun, sun.target);
   // İlk Karşılaşma: kayık yaklaşır, adalılar kıyıya iner
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); const R = (a) => Math.random() * a, ww = lam({ map: T.wood(2, 1) }); stage.add(box(7, .2, 3.4, ww, 0, 3.3, 6)); for (const [x, z] of [[-3.3, 4.5], [3.3, 4.5], [-3.3, 7.5], [3.3, 7.5]]) stage.add(box(.2, 3.3, .2, ww, x, 1.65, z));
-  const N = 360, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.1) * 15, z = 13 - R(1) * 10; return { x, z, ax: x * .45, color: ['#c9b48a', '#a07a4e', '#b08858', '#d8c8a8'][R(4) | 0], delay: 40 + R(12), speed: 2 + R(.8), dist: z + 3.5 + R(9), back: 9999 }; }, false, CIVILIAN); stage.add(mob);
+  const N = 360, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.1) * 15, z = 13 - R(1) * 10; return { x, z, ax: x * .45, color: ['#c9b48a', '#a07a4e', '#b08858', '#d8c8a8'][R(4) | 0], delay: 40 + R(12), speed: 2 + R(.8), dist: z + 3.5 + R(9), back: 9999 }; }, false, 'isle'); stage.add(mob);
   const spect = { active: false, t: 0, sound: null, setDensity: (k) => { mob.count = Math.floor(N * k); }, raiseFlag() {} };
   spect.start = (sound) => { Object.assign(spect, { active: true, t: 0, sound, fired: false }); stage.visible = true; boat.position.set(-6, 0, -62); sancak.visible = false; mob.userData.uni.uT.value = 0; };
   spect.stop = () => { spect.active = false; stage.visible = false; boat.position.set(-6, 0, -10.6); sancak.visible = true; };
@@ -435,7 +447,7 @@ export function buildNotre() {
   const actors = [], hero = placed(actors, g);
   hero({ model: 'king', robe: '#8c1f1c', hat: 'none', hair: '#3a2a1e' }, 0, -15.5, 0).root.position.y = .6; const jo = hero({ model: 'hood', robe: '#e6dcc8', hat: 'none' }, 1.4, -14.6, -.5); jo.root.position.y = .6; const pope = hero({ model: 'adv', robe: '#ece6d6', hat: 'none', hair: '#a8a29a' }, -4.8, -15.5, .6); pope.root.position.y = .6; hero({ robe: '#7a2a2a', hat: 'none' }, -2.6, -13.4, .6, 'Interact').root.position.y = .6;
   hero({ model: 'hood', robe: '#2a3a6a', hat: 'none' }, -3, 3, 1.5, 'Interact'); const gr = [[hero({ robe: '#2d3f73', cap: '#16161c', hat: 'tricorne' }, 3.2, 5, -1.4, 'Idle_Sword').root, hero({ model: 'hood', robe: '#6a4a5a', hat: 'none' }, 4.2, 5.4, -1.8).root], [hero({ robe: '#3a2e4a', hat: 'none' }, -3.4, 9, 1.4, 'Interact').root, hero({ model: 'hood', robe: '#4a3a58', hat: 'none' }, -4.2, 9.4, 1).root]];
-  const seat = []; for (let z = 8; z > -11; z -= 1.3) for (let x = -4.2; x <= 4.2; x += 1.05) { if (Math.abs(x) < 1.9) continue; seat.push([x, z]); } const crowd = army(seat.length, (i) => ({ x: seat[i][0], z: seat[i][1], color: ['#2a3a6a', '#6a1f1c', '#3a2e4a', '#d8ccb0', '#2a2a30', '#5a4a30'][i % 6], delay: 0, speed: 0, dist: 0, back: 9999 }), false, CIVILIAN); g.add(crowd);
+  const seat = []; for (let z = 8; z > -11; z -= 1.3) for (let x = -4.2; x <= 4.2; x += 1.05) { if (Math.abs(x) < 1.9) continue; seat.push([x, z]); } const crowd = army(seat.length, (i) => ({ x: seat[i][0], z: seat[i][1], color: ['#2a3a6a', '#6a1f1c', '#3a2e4a', '#d8ccb0', '#2a2a30', '#5a4a30'][i % 6], delay: 0, speed: 0, dist: 0, back: 9999 }), false, 'court', { tint: '#f0e4d4' }); g.add(crowd);
   motes(g, 70, [-7, 7], [.5, 12], [-20, 16], '#ffe2b0', .05); contactShadows(g, [[0, .61, -15.5, 1.1], [1.4, .61, -14.6, 1.1], [-4.8, .61, -15.5, 1.1]]); bakeStatic(g);
   const main = new THREE.SpotLight('#ffe0b0', 200, 40, 1.05, .6, 1.2); main.position.set(0, 16, -9); main.target.position.set(0, 0, -15); main.castShadow = true; main.shadow.mapSize.set(1024, 1024); main.shadow.bias = -.0008; g.add(main, main.target, new THREE.HemisphereLight('#cdb898', '#2a1c14', 1.3));
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); stage.add(box(4, .22, 3.4, lam({ map: T.wood(2, 1) }), 0, 4.9, 2)); for (const [x, z] of [[-1.9, .5], [1.9, .5], [-1.9, 3.5], [1.9, 3.5]]) stage.add(box(.16, 4.9, .16, lam({ map: T.wood(1, 2) }), x, 2.45, z));
@@ -447,7 +459,7 @@ export function buildNotre() {
 }
 
 export function buildHiroshima() {
-  const g = new THREE.Group(), sky = new THREE.Mesh(new THREE.SphereGeometry(300, 20, 12), new THREE.MeshBasicMaterial({ map: T.paleSky(), side: THREE.BackSide, fog: false })), skyA = T.paleSky(), skyB = T.greySky(); g.add(sky);
+  const g = new THREE.Group(), skyA = getSky('day'), skyB = getSky('grey'), sky = new THREE.Mesh(new THREE.SphereGeometry(300, 20, 12), new THREE.MeshBasicMaterial({ map: skyA, side: THREE.BackSide, fog: false })); g.add(sky);
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(200, 130), lam(T.pbr(T.dirt(30, 20), 1.6))); fl.rotation.x = -Math.PI / 2; fl.position.z = 40; g.add(fl);
   const fl2 = new THREE.Mesh(new THREE.PlaneGeometry(200, 60), lam(T.pbr(T.dirt(30, 10), 1.6))); fl2.rotation.x = -Math.PI / 2; fl2.position.z = -62; g.add(fl2);
   const { n } = seaPlane(g, '#3a6a7a', -.3);
@@ -472,7 +484,7 @@ export function buildHiroshima() {
   motes(g, 60, [-16, 16], [.4, 6], [-14, 12], '#ffffff', .05); bakeStatic(before); bakeStatic(after);
   const hemi = new THREE.HemisphereLight('#d6e2ea', '#6a6052', 1.5); g.add(hemi); const sun = sunShadow(new THREE.DirectionalLight('#fff4dc', 2.6), 54); sun.position.set(24, 44, -20); sun.target.position.set(0, 0, -10); g.add(sun, sun.target);
   // Hatırlama: nehirde fenerler. Her yıl yapılan anma töreninden esinlenir.
-  const lanterns = new Float32Array(240); for (let i = 0; i < 80; i++) lanterns.set([-45 + Math.random() * 90, -.1, -22 + Math.random() * 10], i * 3); const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lanterns, 3)); const lm = new THREE.Points(lg, new THREE.PointsMaterial({ color: '#ffc880', size: .6, map: T.soft('255,255,255'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); lm.visible = false; g.add(lm);
+  const lanterns = new Float32Array(240); for (let i = 0; i < 80; i++) lanterns.set([-40 + Math.random() * 62, -.05, -31 + Math.random() * 5.4], i * 3); const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lanterns, 3)); const lm = new THREE.Points(lg, new THREE.PointsMaterial({ color: '#ffc880', size: .45, map: T.soft('255,255,255'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); lm.visible = false; g.add(lm);
   const fog = new THREE.Fog('#c8d2d6', 60, 280), day = () => { before.visible = true; after.visible = false; sky.material.map = skyA; sky.material.needsUpdate = true; hemi.intensity = 1.5; sun.intensity = 2.6; lm.visible = false; fog.color.set('#c8d2d6'); fog.near = 60; fog.far = 280; }, ruin = (lamp) => { before.visible = false; after.visible = true; sky.material.map = skyB; sky.material.needsUpdate = true; hemi.intensity = lamp ? .7 : 1.05; sun.intensity = lamp ? .2 : .55; lm.visible = lamp; fog.color.set(lamp ? '#22262c' : '#7a7670'); fog.near = 24; fog.far = lamp ? 200 : 150; };
   const spect = stubSpect({ start: () => ruin(true), stop: day, tick(t) { lg.attributes.position.array.forEach((_, i, a) => { if (i % 3 === 0) a[i] += .012; }); lg.attributes.position.needsUpdate = true; } });
   return { group: g, groups, actors, spect, floorY: 0, fog, bg: '#c8d2d6', toAfter() { ruin(false); }, climax() {}, reset: day,
@@ -494,7 +506,7 @@ export function buildBerlin() {
   hero({ robe: '#4a5a44', hat: 'none' }, -1.8, -.6, 3.1, 'Interact'); hero({ robe: '#4a5a44', hat: 'none' }, 2.2, -2, 3.1); hero({ robe: '#3a4a34', hat: 'none' }, 1, -3.8, 3);
   hero({ model: 'hood', robe: '#54607a', hat: 'none' }, -4, -9, 1, 'Wave'); hero({ robe: '#4a3a30', hat: 'none' }, 0, -9.6, 0, 'Wave'); hero({ model: 'hood', robe: '#6a4a3a', hat: 'none' }, 3, -8.6, -.4, 'Interact');
   const groups = [[hero({ robe: '#3a3f4a', hat: 'none' }, 5.6, 5.4, -1, 'Interact').root, hero({ model: 'hood', robe: '#6a5a4a', hat: 'none' }, 6.8, 5.8, -2).root], [hero({ model: 'hood', robe: '#54607a', hat: 'none' }, -5.6, 5, 1.2, 'Interact').root, hero({ robe: '#4a4a50', hat: 'none' }, -6.8, 4.4, 1).root]];
-  const R = (a) => Math.random() * a, N = 2000, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.2) * 8, z = 14 + R(1) * 20; return { x, z, ax: x * .5, color: ['#3a3f4a', '#6a5a4a', '#54607a', '#8a7a64', '#4a4a50'][R(5) | 0], delay: 46 + (z - 14) / 20 * 26, speed: 2.8 + R(.6), dist: z + 18 + R(8), back: 9999 }; }, false, CIVILIAN); g.add(mob);
+  const R = (a) => Math.random() * a, N = 2000, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.2) * 8, z = 14 + R(1) * 20; return { x, z, ax: x * .5, color: ['#3a3f4a', '#6a5a4a', '#54607a', '#8a7a64', '#4a4a50'][R(5) | 0], delay: 46 + (z - 14) / 20 * 26, speed: 2.8 + R(.6), dist: z + 18 + R(8), back: 9999 }; }, false, 'berlin', { tint: '#ffffff' }); g.add(mob);
   motes(g, 50, [-9, 9], [.4, 6], [-12, 12], '#e8ecff', .05); bakeStatic(g);
   g.add(new THREE.HemisphereLight('#8fa0c8', '#3a3a40', 2.2)); const flood = sunShadow(new THREE.DirectionalLight('#ffe8c8', 2.2), 34, 1536); flood.position.set(14, 30, 18); flood.target.position.set(0, 0, -4); g.add(flood, flood.target);
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); stage.add(box(5, .22, 4, lam({ map: T.wood(2, 1) }), 0, 3.5, 8)); for (const [x, z] of [[-2.3, 6.2], [2.3, 6.2], [-2.3, 9.8], [2.3, 9.8]]) stage.add(box(.2, 3.5, .2, lam({ map: T.wood(1, 2) }), x, 1.75, z));
@@ -506,13 +518,13 @@ export function buildBerlin() {
 }
 
 export function buildNYC() {
-  const g = new THREE.Group(), sky = new THREE.Mesh(new THREE.SphereGeometry(600, 20, 12), new THREE.MeshBasicMaterial({ map: T.islandSky(), side: THREE.BackSide, fog: false })), skyA = T.islandSky(), skyB = T.nightSky(); g.add(sky);
+  const g = new THREE.Group(), skyA = getSky('day'), skyB = T.nightSky(), sky = new THREE.Mesh(new THREE.SphereGeometry(600, 20, 12), new THREE.MeshBasicMaterial({ map: skyA, side: THREE.BackSide, fog: false })); g.add(sky);
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(120, 30), lam(T.pbr(T.concrete(20, 5), 1.2))); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0, 11); g.add(fl);
   const { n, sea } = seaPlane(g, '#2f5a70', -1.2); sea.scale.set(2, 2, 1);
   const rail = lam({ color: '#2a2e34' }); g.add(box(120, .1, .1, rail, 0, 1.1, -3.6), box(120, .1, .1, rail, 0, .6, -3.6)); for (let x = -50; x <= 50; x += 2.5) g.add(box(.08, 1.1, .08, rail, x, .55, -3.6));
   scatter(g, 'tree_oak', [[-22, 0, 8, 2.2, 1], [-14, 0, 12, 2, 2], [15, 0, 10, 2.1, 3], [25, 0, 12, 2.3, 1]]);
   const bench = lam({ map: T.wood(2, 1) }); for (const x of [-6, 6, 18, -18]) g.add(box(2.4, .45, .5, bench, x, .35, -1.8));
-  g.add(box(6, 2.6, 2.4, lam({ color: '#a82418' }), -5.2, 1.5, 4.4), box(5.8, .2, 2.2, lam({ color: '#c8c0a8' }), -5.2, 2.9, 4.4), box(3.6, .9, 1.7, lam({ color: '#e0b82a' }), 6.4, .75, 3.4), box(1.9, .55, 1.5, lam({ color: '#20242c' }), 6.4, 1.45, 3.4), box(2.4, 1.1, 1, lam({ color: '#4a5468' }), 2.4, .55, 4));
+  prop(g, 'firetruck', -5.2, 0, 4.4, 1.9, Math.PI / 2); prop(g, 'taxi', 6.4, 0, 3.4, 1.6, -Math.PI / 2); g.add(box(2.4, 1.1, 1, lam({ color: '#4a5468' }), 2.4, .55, 4)); scatter(g, 'bush', [[-12, 0, 11, 1.4, 1], [-9, 0, 12, 1.2, 2], [9, 0, 12, 1.3, 3], [13, 0, 11, 1.4, 1]]);
   // Ufuk çizgisi: İkiz Kuleler yalnızca sabahta görünür; yıkım gösterilmez.
   const city = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), lam({ color: '#6f7a86' }), 70), M = new THREE.Matrix4(), Q = new THREE.Quaternion(); for (let i = 0; i < 70; i++) { const h = 24 + ((i * 41) % 70), w = 9 + i % 7, x = -220 + i * 6.4; M.compose(new THREE.Vector3(x, h / 2, -330 - (i * 17 % 60)), Q, new THREE.Vector3(w, h, 10)); city.setMatrixAt(i, M); } city.userData.dyn = true; g.add(city);
   const towers = new THREE.Group(); for (const x of [-14, 12]) towers.add(box(20, 178, 20, lam({ color: '#a9b4be' }), x, 89, -345)); towers.userData.dyn = true; g.add(towers);
@@ -563,7 +575,7 @@ export function buildCity() {
 
 export function buildParis() {
   const g = new THREE.Group();
-  g.add(new THREE.Mesh(new THREE.SphereGeometry(220, 20, 12), new THREE.MeshBasicMaterial({ map: T.daySky(), side: THREE.BackSide, fog: false })));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(220, 20, 12), new THREE.MeshBasicMaterial({ map: getSky('day'), side: THREE.BackSide, fog: false })));
   const f = new THREE.Mesh(new THREE.PlaneGeometry(90, 130), lam(T.pbr(T.cobbles(40, 58), 3))); f.rotation.x = -Math.PI / 2; f.position.z = -20; g.add(f);
   const walls = [0, 1, 2].map(i => lam(T.pbr(T.facade('paris', i), 1.2)));
   houses(g, -1, 13, -30, 18, walls, '#3f4449'); houses(g, 1, 13, -30, 18, walls, '#3f4449');
@@ -600,7 +612,7 @@ export function buildParis() {
   // Bastille'in Düşüşü: iskele, toplar ve kaleye akan kalabalık.
   const stage = new THREE.Group(); stage.visible = false; g.add(stage); const R = (a) => Math.random() * a, woodS = lam({ map: T.wood(2, 1) });
   stage.add(box(7.5, .22, 4.2, woodS, 0, 5.9, -5)); for (const [x, z] of [[-3.6, -3], [3.6, -3], [-3.6, -7], [3.6, -7]]) stage.add(box(.2, 5.9, .2, woodS, x, 2.95, z)); stage.add(box(7.5, .1, .1, woodS, 0, 6.42, -7.05), box(.1, .1, 4.2, woodS, -3.7, 6.42, -5), box(.1, .1, 4.2, woodS, 3.7, 6.42, -5));
-  const cNames = ['#3a3f4a', '#6e2a21', '#2d3f73', '#5a4a30', '#c8bda6', '#7a5a3a', '#4b5a48'], N = 2600, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.3) * 14, z = 8 - R(1) * 37; return { x, z, ax: x, color: cNames[R(7) | 0], delay: 76 + (z + 29) / 37 * 15 + R(2), speed: 2.5 + R(.6), dist: z + 33.5, back: 9999 }; }, true, CIVILIAN); stage.add(mob);
+  const cNames = ['#3a3f4a', '#6e2a21', '#2d3f73', '#5a4a30', '#c8bda6', '#7a5a3a', '#4b5a48'], N = 2600, mob = army(N, () => { const u = R(2) - 1, x = Math.sign(u) * Math.pow(Math.abs(u), 1.3) * 14, z = 8 - R(1) * 37; return { x, z, ax: x, color: cNames[R(7) | 0], delay: 76 + (z + 29) / 37 * 15 + R(2), speed: 2.5 + R(.6), dist: z + 33.5, back: 9999 }; }, true, 'paris'); stage.add(mob);
   const pGuns = [-4.5, 4.5].map(x => { const c = new THREE.Group(), b = new THREE.Mesh(new THREE.CylinderGeometry(.13, .17, 2, 10), lam({ color: '#6b5230' })); b.rotation.x = Math.PI / 2; b.position.y = .7; c.add(b, box(.9, .25, 1.6, woodS, 0, .3, .3)); c.position.set(x, 0, -24); c.visible = false; stage.add(c); return c; });
   const flashes = pGuns.map(c => { const s = glow(5, '255,210,140'); s.position.set(c.position.x, 1, -26); s.visible = false; stage.add(s); return s; });
   const spect = { active: false, t: 0, next: 0, puff: 0, sound: null, setDensity: (k) => { mob.count = Math.floor(N * k); }, raiseFlag() {} };

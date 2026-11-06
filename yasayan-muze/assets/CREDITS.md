@@ -6,3 +6,6 @@ Bu klasördeki modeller CC0 1.0 (kamu malı) lisanslıdır. Atıf zorunlu değil
 - Optimize kopyalar: `@netforge/asset-library-files` 0.2.0
 
 Kaynak bildirimi: `THIRD-PARTY-NOTICE.txt`
+
+- Gökyüzü fotoğrafları: Poly Haven, CC0 (`@pmndrs/assets` üzerinden, işlenmiş)
+- Taksi ve itfaiye aracı: Kenney, CC0

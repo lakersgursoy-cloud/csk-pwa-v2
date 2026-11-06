@@ -3,7 +3,7 @@ import { advance, initialState, currentCharacter } from './story.js';
 import { CHAPTERS } from './chapters.js';
 import * as T from './textures.js';
 import { buildMuseum, buildSiege, buildCity, buildParis, buildAnkara, buildMeclis, buildIsland, buildDeck, buildNotre, buildHiroshima, buildBerlin, buildNYC, glow, box, makeHand, makeItem } from './worlds.js';
-import { loadKit, makeActor } from './actors.js';
+import { loadKit, makeActor, setBakeRenderer } from './actors.js';
 import { Panel } from './ui.js';
 import { Sound } from './audio.js';
 
@@ -20,7 +20,7 @@ document.body.prepend(renderer.domElement);
 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 800), rig = new THREE.Group();
 camera.position.y = 1.62; rig.add(camera); scene.add(rig);
 const perf = { t: 0, n: 0, level: 0 }, LEVELS = [1, .6, .35, .2];
-await loadKit();
+setBakeRenderer(renderer); { let n = 0; const total = 18; await loadKit(() => { n++; $('bilgi').textContent = `Hazırlanıyor: yüzde ${Math.min(99, Math.round(n / total * 100))}`; }); $('bilgi').textContent = 'Saat 00.24. Müze kapandı. Sen hâlâ içeridesin.'; }
 const museum = buildMuseum(), built = { museum }, BUILD = { siege: buildSiege, city: buildCity, paris: buildParis, ankara: buildAnkara, meclis: buildMeclis, island: buildIsland, deck: buildDeck, notre: buildNotre, hiroshima: buildHiroshima, berlin: buildBerlin, nyc: buildNYC };
 // Dünyalar kapıya girildiğinde kurulur; Quest'te açılış ve bellek hafif kalır.
 const worlds = new Proxy(built, { get(t, k) { if (!(k in t) && BUILD[k]) { const w = BUILD[k](); t[k] = w; scene.add(w.group); w.group.visible = false; w.spect?.setDensity(LEVELS[perf.level]); renderer.compile?.(scene, camera); } return t[k]; } });
@@ -51,6 +51,14 @@ let subT = 0, lastSay = '';
 function say(text, title, secs = 6) { sound.narrate(text); sub.set(text, title); place(sub, 1.8, -.34); sub.visible = true; subT = secs; lastSay = text; }
 const hint = (t) => { $('hud').textContent = renderer.xr.isPresenting ? '' : t; };
 
+// Yönlendirme: sıradaki hedef görüş dışındaysa küçük bir ok yolu gösterir.
+const guide = new THREE.Mesh(new THREE.ConeGeometry(.045, .13, 4), new THREE.MeshBasicMaterial({ color: '#ffd98a', fog: false, depthTest: false, transparent: true, opacity: .85 })); guide.renderOrder = 30; guide.visible = false; scene.add(guide);
+const objTmp = new THREE.Vector3(), guideDir = new THREE.Vector3();
+function objective() { const s = state.stage; if (s === 'wake') return prop.itemHit; if (s === 'carry') return prop.targetHit; if (s === 'climax') return prop.climaxHit; if (s === 'aftermath' && prop.trophy.visible) return prop.trophyHit; if (s === 'assault' && climbHit.visible) return climbHit; return null; }
+function updateGuide() {
+  const o = objective(); guide.visible = false; if (!o || busy) return; o.getWorldPosition(objTmp); guideDir.copy(objTmp).sub(headPos).normalize(); const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+  if (fwd.dot(guideDir) > .78) return; guide.visible = true; const flat = guideDir.clone().sub(fwd.clone().multiplyScalar(fwd.dot(guideDir))).normalize(); guide.position.copy(headPos).addScaledVector(fwd, .7).addScaledVector(flat, .24); guide.quaternion.setFromUnitVectors(UP, flat); guide.scale.setScalar(1 + Math.sin(time * 5) * .12);
+}
 // Etkileşim
 const items = [];
 const on = (hit, label, fn, active = () => true) => { const it = { hit, label, fn, active }; items.push(it); return it; };
@@ -174,7 +182,7 @@ async function enter(stage) {
   const ch = CHAPTERS[state.chapter], c = currentCharacter(state), me = ++token;
   if (stage === 'traveller') {
     const w = worlds[ch.world]; w.reset(); heard.clear(); prop.group.parent?.remove(prop.group); showTraces(state.chapter); setPersona(false, '#264a66');
-    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient(ch.ambient || (ch.world === 'siege' ? 'camp' : 'crowd')); allHands().forEach(h => { h.visible = true; });
+    setWorld(w, ...ch.arrive.at, ...ch.arrive.face); sound.ambient(ch.ambient || (ch.world === 'siege' ? 'camp' : 'crowd')); sound.score(ch.scale, !!ch.solemn); allHands().forEach(h => { h.visible = true; });
     await fade(0, 1.2); say(ch.arrive.text, 'Zaman Yolcusu', 7); hint('Çevreyi dinle, sonra içine gireceğin hayatı seç.');
     await wait(7); if (token === me) say('Işıldayan izlerden birine dokun. İstediğin zaman dönüp başka birini seçebilirsin.', 'Zaman Yolcusu', 8);
   } else if (stage === 'assault') {
@@ -208,7 +216,7 @@ async function enter(stage) {
     for (const [id, o] of Object.entries(state.done[state.chapter])) { say(ch.characters[id].options[o].finale, ch.characters[id].label, 5); await wait(5); }
     say(ch.closing, 'Tarih', 9); await wait(9); busy = false; go('finish');
   } else if (stage === 'museum') {
-    busy = true; hint(''); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
+    busy = true; hint(''); sound.score(null); await fade(1, 1); setPersona(false); allHands().forEach(h => { h.visible = false; }); for (const k in traces) traces[k].forEach(t => { t.g.visible = false; });
     { const [px, pz] = museum.pedestals[state.chapter]?.pos ?? [3, 1]; setWorld(museum, px * .4, pz + 3, px, pz); } sound.ambient('museum');
     for (const d of Object.values(museum.doors)) d.userData.motion = 0; save({ ...load(), done: state.done }); Object.keys(CHAPTERS).forEach(hasTrophy);
     await fade(0, 1); if (endNote) { say(endNote, 'Saat 00.24', 8); endNote = ''; busy = false; return; } say(`${ch.trophy.name} artık müzede. Ona dokunursan o an yeniden canlanır. Aynı kapıdan dönüp başka bir hayata da girebilirsin.`, 'Saat 00.24', 8); busy = false;
@@ -294,7 +302,7 @@ function animate(dt) {
       world.groups.forEach((g, i) => { const dx = headPos.x - g[0].position.x, dz = headPos.z - g[0].position.z, l = CHAPTERS[state.chapter].lines[i]; if (dx * dx + dz * dz < 16 && !heard.has(i)) { heard.add(i); go('listen', `g${i}`); say(l[0], l[1], 8); } });
     }
   }
-  hover.visible = false; moving = 0;
+  sound.tick(dt); updateGuide(); hover.visible = false; moving = 0;
   if (renderer.xr.isPresenting) xrInput(dt); else deskInput(dt);
   tunnel.material.opacity += (moving * .85 - tunnel.material.opacity) * Math.min(1, dt * 8); tunnel.visible = tunnel.material.opacity > .01;
 }
