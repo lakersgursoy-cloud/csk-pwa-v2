@@ -1,0 +1,20 @@
+name: Watch Swift check (temporary)
+on: push
+permissions: { contents: read }
+jobs:
+  swift:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: xcrun swiftc --version
+      - name: Behaviour tests (macOS)
+        run: |
+          xcrun --sdk macosx swiftc -swift-version 5 CoachWatchTimer.swift CoachWatchPayload.swift main.swift -o "$RUNNER_TEMP/t"
+          "$RUNNER_TEMP/t"
+      - name: Typecheck against watchOS SDK
+        if: always()
+        run: |
+          xcrun --sdk watchos swiftc -typecheck -swift-version 5 -target arm64_32-apple-watchos10.0 \
+            -sdk "$(xcrun --sdk watchos --show-sdk-path)" CoachWatchTimer.swift CoachWatchPayload.swift
