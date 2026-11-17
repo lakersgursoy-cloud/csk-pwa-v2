@@ -333,6 +333,21 @@ check("measurement queue follows late attendance changes without losing times") 
  precondition(run.queue.names==["Bora","Can","Deniz"] && run.order==["Can","Deniz"],"a late arrival joins the end, a measured swimmer keeps the time")
  precondition(run.valid)
 }
+check("measurement queue: updates keep pre-start skips, filter stale marks and never exceed 40 names") {
+ let ev=[CoachMeasureEvent(distance:50,stroke:"Serbest")]
+ var run=CoachMeasureRun(queue:CoachMeasureQueue(at:nil,pool:25,events:ev,names:["Ali","Bora","Can"]),day:"d")
+ precondition(run.skip() && run.order==["Bora","Can","Ali"])
+ run.update(CoachMeasureQueue(at:nil,pool:25,events:ev,names:["Ali","Bora","Can","Deniz"]))
+ precondition(run.order==["Bora","Can","Ali","Deniz"],"a skip before the first swim survives an attendance update")
+ let marks=[CoachMeasureMark(name:"Can",event:0,best:40,last:nil),CoachMeasureMark(name:"Ali",event:0,best:38,last:nil)]
+ run.update(CoachMeasureQueue(at:nil,pool:25,events:ev,names:["Ali","Bora","Can","Deniz"],marks:marks))
+ precondition(run.start(at:at(0)) && run.stop(at:at(30)) != nil)
+ run.update(CoachMeasureQueue(at:nil,pool:25,events:[CoachMeasureEvent(distance:25,stroke:"Kelebek")],names:["Ali","Bora","Deniz"]))
+ precondition(run.queue.marks==[CoachMeasureMark(name:"Ali",event:0,best:38,last:nil)] && run.valid,"Can left before swimming: his mark goes too")
+ let many=(0..<40).map { "Yeni \($0)" }
+ run.update(CoachMeasureQueue(at:nil,pool:25,events:ev,names:many))
+ precondition(run.queue.names.count==40 && run.valid,"names already measured are kept, newcomers fill up to 40")
+}
 check("measurement queue packet is validated like the rest of the day") {
  let ok=CoachMeasureQueue(at:nil,pool:25,events:[CoachMeasureEvent(distance:50,stroke:"Serbest")],names:["Ali"])
  precondition(ok.valid(expiresAt:nil))

@@ -475,17 +475,18 @@ struct CoachMeasureRun: Codable, Equatable {
   mutating func markSubmitted(_ id: UUID) { if let i = results.firstIndex(where: { $0.id == id }) { results[i].submitted = true } }
   /// A late arrival marked on the phone joins the end; names already measured keep their times.
   mutating func update(_ next: CoachMeasureQueue) {
-    let fresh = next.names.filter { !queue.names.contains($0) }
     let protected = Set(results.map(\.name)).union(swimming)
     let removed = Set(queue.names.filter { !next.names.contains($0) && !protected.contains($0) })
-    let names = queue.names.filter { !removed.contains($0) } + fresh
+    let kept = queue.names.filter { !removed.contains($0) }
+    // Never past 40 names, so the saved run always validates again on the next launch.
+    let fresh = Array(next.names.filter { !queue.names.contains($0) }.prefix(max(0, 40 - kept.count)))
+    let names = kept + fresh
     let events = started ? queue.events : next.events
-    let marks = (next.marks ?? []).filter { names.contains($0.name) && events.indices.contains($0.event) }
-    queue = CoachMeasureQueue(at: next.at, pool: started ? queue.pool : next.pool, events: events, names: names,
-      marks: started && next.events != queue.events ? queue.marks : marks)
-    if !finished {
-      order = started ? order.filter { !removed.contains($0) } + fresh : names
-    }
+    let source = started && next.events != queue.events ? (queue.marks ?? []) : (next.marks ?? [])
+    let marks = source.filter { names.contains($0.name) && events.indices.contains($0.event) }
+    queue = CoachMeasureQueue(at: next.at, pool: started ? queue.pool : next.pool, events: events, names: names, marks: marks)
+    // Skips and drops made before the first swim are kept; a late arrival joins the end.
+    if !finished { order = order.filter { !removed.contains($0) } + fresh }
   }
   func utterance(_ result: CoachMeasureResult) -> String? {
     guard queue.events.indices.contains(result.event) else { return nil }
@@ -500,4 +501,13 @@ struct CoachMeasureRun: Codable, Equatable {
       && swimming.count <= lanes && swimming.allSatisfy { order.contains($0) } && (anchor == nil) == swimming.isEmpty
       && results.allSatisfy { queue.names.contains($0.name) && $0.seconds >= 1 && $0.seconds < 3600 && $0.event < queue.events.count }
   }
+}
+
+/// A measured time whose run has ended before the iPhone received it. Sent with its original id, so never twice.
+struct CoachMeasureOrphan: Codable, Equatable {
+  let id: UUID
+  let text: String
+  let createdAt: Date
+  /// The phone refuses Watch drafts older than seven days.
+  var expired: Bool { Date().timeIntervalSince(createdAt) > 6.5 * 86400 }
 }
