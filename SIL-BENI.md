@@ -1,0 +1,1 @@
+Geçici aktarım dalı. Silinebilir.
